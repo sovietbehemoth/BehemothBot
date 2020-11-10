@@ -61,15 +61,12 @@ namespace DiscordBotAttempt3
                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Fatal error occurred, check debugger");
                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync($"Error: {e.Exception.Message}");
             };
-            discord.MessageCreated += async e =>
+             discord.MessageCreated += async e =>
             {
                 if (e.Message.Content.ToLower().StartsWith("-p"))
                     await e.Message.RespondAsync("Groovy is bad");
-            };
-            discord.MessageCreated += async e =>
-            {
                 if (e.Message.Content.ToLower().StartsWith("somebehemoth is a chad"))
-                    await e.Message.DeleteAsync();    
+                    await e.Message.DeleteAsync();
             };
             commands = discord.UseCommandsNext(new CommandsNextConfiguration
             {
@@ -579,6 +576,14 @@ namespace DiscordBotAttempt3
                         }
                     }
                 };
+                
+                 [Command("purple"), Description("Returns a random phrase")]
+        public async Task Purple(CommandContext ctx)
+        {
+            string[] lyrics = {"example1", "example2", "example3"};
+            var lyricval = lyrics[new Random().Next(0, lyrics.Length)];
+            await ctx.RespondAsync(lyricval);
+        }
         }
     }
 }
