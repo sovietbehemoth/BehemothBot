@@ -604,7 +604,7 @@ namespace DiscordBotAttempt3
             await ctx.RespondAsync(product.ToString());
         }
 
-        [Command("div"), Description("Multiplies two numbers")]
+        [Command("div"), Description("Divides two numbers")]
         [Hidden]
         public async Task Div(CommandContext ctx, int x, int y)
         {
