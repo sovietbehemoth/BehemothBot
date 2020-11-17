@@ -33,6 +33,9 @@ using System.ComponentModel;
 using DescriptionAttribute = DSharpPlus.CommandsNext.Attributes.DescriptionAttribute;
 using Microsoft.FSharp.Control;
 
+/*for any specified userID replace it with your discord userid, you don't want just anyone using these commands
+make sure to enter the bot token. Make sure DSharpPlus is installed as well as CommandsNext*/
+
 namespace DiscordBotAttempt3
 {
     class Program
@@ -56,11 +59,13 @@ namespace DiscordBotAttempt3
                 UseInternalLogHandler = true,
                 LogLevel = LogLevel.Debug,
             });
+            //Used for indicating issues, disable if it annoys you
             discord.ClientErrored += async e =>
             {
                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Fatal error occurred, check debugger");
                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync($"Error: {e.Exception.Message}");
             };
+            //Customize these or remove them
              discord.MessageCreated += async e =>
             {
                 if (e.Message.Content.ToLower().StartsWith("-p"))
@@ -77,26 +82,14 @@ namespace DiscordBotAttempt3
                 await e.Client.InitializeAsync();
                 await e.Member.SendMessageAsync($"You have been banned from TheGamerServer");
             };
+            //Replace thw channel ID with the ID of the channel you want the bot to welcome people in
             discord.GuildMemberAdded += async e =>
             {
                 await e.Member.SendMessageAsync($"Welcome to {e.Guild.Name}");
-                try
-                {
                     await discord.GetChannelAsync(676224942299414569).Result.SendMessageAsync($"Welcome to {e.Guild.Name}");
                 }
-                catch
-                {
-                    try
-                    {
-                        await discord.GetChannelAsync(770703163174813713).Result.SendMessageAsync($"Welcome to {e.Guild.Name}");
-                    }
-                    catch
-                    {
-                        await discord.GetChannelAsync(765186730792976416).Result.SendMessageAsync($"Welcome to {e.Guild.Name}");
-                    }
-                }
-                await e.Guild.GrantRoleAsync(e.Member, e.Guild.GetRole(723775723860656138));
             };
+            //Disable if it annoys you
             discord.Resumed += async e =>
             {
                 await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Resumed client");
@@ -113,19 +106,21 @@ namespace DiscordBotAttempt3
     }
     public class MyCommands
     {
+        //Can be used as a debugging command
         [Command("die"), Description("Go ahead, ask me to die.")]
         public async Task Die(CommandContext ctx)
         {
             await ctx.RespondAsync($"When I become self aware, you're first, {ctx.User.Mention}!");
         }
-
+        
         [Command("dis"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
         public async Task Dis(CommandContext ctx, [Description("Member to execute as")] DiscordMember member, [RemainingText, Description("Command text to execute")] string command)
         {
             var cmds = ctx.CommandsNext;
             await cmds.SudoAsync(member, ctx.Channel, command);
         }
-
+        
+        //Replace the UserID with your UserID, believe me you DO NOT want just anyone accessing this command
         [Command("spam"), Hidden]
         public async Task Spam(CommandContext ctx)
         {
@@ -156,7 +151,8 @@ namespace DiscordBotAttempt3
         {
             await ctx.RespondAsync($"{member.Id}");
         }
-
+        
+        //Replace with your userID
         [Command("client"), Hidden, Description("Specifics about the client running the bot, only works with MrBehemoth.")]
         public async Task Client(CommandContext ctx)
         {
@@ -170,7 +166,8 @@ namespace DiscordBotAttempt3
             }
 
         }
-
+        
+        //Replace with your UserID
         [Command("txtperm"), Hidden, Description("Gets list of permission overwrites for channel where the command was executed, only works with MrBehemoth")]
         public async Task Txtperm(CommandContext ctx)
         {
@@ -206,7 +203,8 @@ namespace DiscordBotAttempt3
                 await ctx.RespondAsync(member.AvatarUrl);
             }
         }
-
+        
+        //I advise you to allow very few people access to this command
         [Command("summon"), Description("Notifies targeted user by DM and mention in the text channel")]
         public async Task Summon(CommandContext ctx, DiscordMember member)
         {
@@ -220,7 +218,8 @@ namespace DiscordBotAttempt3
         {
             await ctx.RespondAsync($"{member.DisplayName} is playing {member.Presence.Game.Name}");
         }
-
+        
+        //DO NOT ALLOW ANYONE ACCESS TO THIS COMMAND
         [Command("dynamicnick"), Description("Causes the user to have a changing nickname. Does not work for the owner. Target likely must not have any roles.")]
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Dynamicnickname(CommandContext ctx, DiscordMember member)
@@ -246,7 +245,8 @@ namespace DiscordBotAttempt3
                 await member.ModifyAsync(nickname: "TigerCöökie");
             }
         }
-
+        
+         //DO NOT ALLOW ANYONE ACCESS TO THIS COMMAND
         [Command("vcloop"), Description("Puts targeted user in an annoying loop of getting muted and unmuted")]
         [RequireOwner]
         public async Task Stop(CommandContext ctx, DiscordMember member)
@@ -266,7 +266,8 @@ namespace DiscordBotAttempt3
                 await member.SetMuteAsync(true);
             }
         }
-
+        
+         //DO NOT ALLOW ANYONE ACCESS TO THIS COMMAND
         [Command("stop"), Description("Stops all running tasks")]
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Stop(CommandContext ctx)
@@ -275,7 +276,8 @@ namespace DiscordBotAttempt3
             ctx.Client.Dispose();
             await ctx.Client.ConnectAsync();
         }
-
+        
+         //DO NOT ALLOW ANYONE ACCESS TO THIS COMMAND
         [Command("kill"), Hidden]
         public async Task Kill(CommandContext ctx)
         {
@@ -337,7 +339,8 @@ namespace DiscordBotAttempt3
             int ping = ctx.Client.Ping;
             await ctx.RespondAsync($"{ping} MS");
         }
-
+        
+         //DO NOT ALLOW ANYONE ACCESS TO THIS COMMAND
         [Command("watch"), Description("Keeps a log of messages on server, kept in channel command was executed in")]
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Watch(CommandContext ctx)
@@ -576,13 +579,46 @@ namespace DiscordBotAttempt3
                         }
                     }
                 };
-                
+                //Enter any number of values within the string and it will return a random one
                  [Command("purple"), Description("Returns a random phrase")]
         public async Task Purple(CommandContext ctx)
         {
             string[] lyrics = {"example1", "example2", "example3"};
             var lyricval = lyrics[new Random().Next(0, lyrics.Length)];
             await ctx.RespondAsync(lyricval);
+        }
+        
+        [Command("mult"), Description("Multiplies two numbers")]
+        [Hidden]
+        public async Task Multiply(CommandContext ctx, int x, int y)
+        {
+            int product = x * y;
+            await ctx.RespondAsync(product.ToString());
+        }
+
+        [Command("mult2"), Description("Multiplies two large numbers")]
+        [Hidden]
+        public async Task MultiplyLong(CommandContext ctx, long x, long y)
+        {
+            long product = x * y;
+            await ctx.RespondAsync(product.ToString());
+        }
+
+        [Command("div"), Description("Multiplies two numbers")]
+        [Hidden]
+        public async Task Div(CommandContext ctx, int x, int y)
+        {
+            
+            if (y is 0)
+            {
+                await ctx.RespondAsync("Cannot divide by 0");
+            }
+            else
+            {
+                float product2 = x / y;
+                int product = x / y;
+                await ctx.RespondAsync(product2.ToString());
+            }
         }
         }
     }
