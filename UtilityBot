@@ -1,0 +1,187 @@
+using System;
+using System.Threading.Tasks;
+using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Interactivity;
+using DSharpPlus.Entities;
+using DSharpPlus.VoiceNext;
+using DescriptionAttribute = DSharpPlus.CommandsNext.Attributes.DescriptionAttribute;
+
+namespace DiscordBotAttempt3
+{
+    public static class Program
+    {
+        static DiscordClient discord;
+        static CommandsNextModule commands;
+        static InteractivityModule interactivity;
+        static VoiceNextClient voice;
+
+
+        static void Main(string[] args)
+        {
+            MainAsync(args).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        static async Task MainAsync(string[] args)
+        {
+            discord = new DiscordClient(new DiscordConfiguration
+            {
+                Token = "NzU4MzU3NDYzMTg2OTMxNzg2.X2txbA.o_23OUIYhufzyDYyYWISmqcEHTk",
+                TokenType = TokenType.Bot,
+                UseInternalLogHandler = true,
+                LogLevel = LogLevel.Debug,
+            });
+            commands = discord.UseCommandsNext(new CommandsNextConfiguration
+            {
+                StringPrefix = "-/"
+            });
+            discord.GuildMemberAdded += async e =>
+            {
+                await e.Member.SendMessageAsync($"Welcome to {e.Guild.Name}");
+            };
+            discord.Resumed += async e =>
+            {
+                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Resumed client");
+            };
+
+            commands.RegisterCommands<MyCommands>();
+
+            await discord.ConnectAsync();
+            await Task.Delay(-1);
+
+            
+        }
+
+    }
+    public class MyCommands
+    {
+        [Command("ban"), Description("Bans specified user")]
+        [RequirePermissions(Permissions.BanMembers)]
+        public async Task Ban(CommandContext ctx, DiscordMember member, string reason)
+        {
+            await member.SendMessageAsync($"You have been banned from {ctx.Guild.Name} for {reason}");
+            await ctx.Guild.BanMemberAsync(member);
+            await ctx.RespondAsync($"Successfully banned {member.DisplayName} for {reason}");
+        }
+
+        [Command("unban"), Description("Unbans specified user")]
+        [RequirePermissions(Permissions.BanMembers)]
+        public async Task Unban(CommandContext ctx, DiscordUser user)
+        {
+            await ctx.Guild.UnbanMemberAsync(user);
+            await ctx.RespondAsync($"Successfully unbanned {user.Username}");
+        }
+
+        [Command("kick"), Description("Kicks specified user")]
+        [RequirePermissions(Permissions.KickMembers)]
+        public async Task Kick(CommandContext ctx, DiscordMember member, string reason)
+        {
+            await member.SendMessageAsync($"You have been kicked from {ctx.Guild.Name}.");
+            await ctx.Guild.RemoveMemberAsync(member);
+            await ctx.RespondAsync($"Successfully kicked {member.DisplayName}");
+        }
+
+        [Command("ping"), Description("Checks the latency of the client to the server, check if BehemothBot is online")]
+        public async Task Ping(CommandContext ctx)
+        {
+            var embed = new DiscordEmbedBuilder
+            {
+                Title = "BehemothBot",
+                Description = $"{ctx.Client.Ping.ToString()} MS",
+            };
+            await ctx.RespondAsync(embed: embed);
+            
+        }
+
+        [Command("serverinfo"), Description("Provides basic information about the discord server")]
+        public async Task Serverinfo(CommandContext ctx)
+        {
+            var embed = new DiscordEmbedBuilder
+            {
+                Title = ctx.Guild.Name,
+                ImageUrl = ctx.Guild.IconUrl,
+                Description = $"This server has {ctx.Guild.MemberCount} members, {ctx.Guild.Channels.Count} channels, and {ctx.Guild.Roles.Count} roles. {ctx.Guild.Name} was created on {ctx.Guild.Owner.JoinedAt.DateTime} and is owned by {ctx.Guild.Owner.DisplayName}",
+                Color = DiscordColor.Gold,
+            };
+            await ctx.RespondAsync(embed: embed);
+        }
+
+        [Command("userinfo"), Description("Provides basic information about the discord server")]
+        public async Task Userinfo(CommandContext ctx, DiscordMember member)
+        {
+            var user = member.Equals(ctx.User);
+            switch (user)
+            {
+                case true:
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Title = member.DisplayName,
+                        ImageUrl = member.AvatarUrl,
+                        Description = $"Your account was created on {member.CreationTimestamp.DateTime}. You joined this server on {member.JoinedAt.DateTime}",
+                        Color = DiscordColor.CornflowerBlue,
+                    };
+                    await ctx.RespondAsync(embed: embed);
+                    break;
+                case false:
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Title = member.DisplayName,
+                        ImageUrl = member.AvatarUrl,
+                        Description = $"This users account was created on {member.CreationTimestamp.DateTime}. They joined this server on {member.JoinedAt.DateTime}",
+                        Color = DiscordColor.CornflowerBlue,
+                    };
+                    await ctx.RespondAsync(embed: embed2);
+                    break;
+            }
+        }
+          
+        [Command("math"), Description("Does simple maths, can do division (div), multiplication (mult), subtraction (sub), and addition (add). (Syntax: -/math (operation) (number1) (number2)")]
+        public async Task Math(CommandContext ctx, string op, int x, int y)
+        {
+            switch (op)
+            {
+                case "mult":
+                    var product = x * y;
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Title = "Product",
+                        Description = product.ToString(),
+                        Color = DiscordColor.Azure,
+                    };
+                    await ctx.RespondAsync(embed: embed);
+                    break;
+                case "div":
+                    var product2 = x / y;
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Title = "Quotient",
+                        Description = product2.ToString(),
+                        Color = DiscordColor.Azure,
+                    };
+                    await ctx.RespondAsync(embed: embed2);
+                    break;
+                case "add":
+                    var sum = x += y;
+                    var embed3 = new DiscordEmbedBuilder
+                    {
+                        Title = "Sum",
+                        Description = sum.ToString(),
+                        Color = DiscordColor.Azure,
+                    };
+                    await ctx.RespondAsync(embed: embed3);
+                    break;
+                case "sub":
+                    var res = x -= y;
+                    var embed4 = new DiscordEmbedBuilder
+                    {
+                        Title = "Difference",
+                        Description = res.ToString(),
+                        Color = DiscordColor.Azure,
+                    };
+                    await ctx.RespondAsync(embed: embed4);
+                    break;
+            }
+        }
+    }
+}
