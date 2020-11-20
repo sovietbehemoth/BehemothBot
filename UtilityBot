@@ -8,6 +8,7 @@ using DSharpPlus.Entities;
 using DSharpPlus.VoiceNext;
 using DescriptionAttribute = DSharpPlus.CommandsNext.Attributes.DescriptionAttribute;
 
+
 namespace DiscordBotAttempt3
 {
     public static class Program
@@ -27,7 +28,7 @@ namespace DiscordBotAttempt3
         {
             discord = new DiscordClient(new DiscordConfiguration
             {
-                Token = "TOKEN",
+                Token = "TOKENHERE",
                 TokenType = TokenType.Bot,
                 UseInternalLogHandler = true,
                 LogLevel = LogLevel.Debug,
@@ -180,6 +181,153 @@ namespace DiscordBotAttempt3
                         Color = DiscordColor.Azure,
                     };
                     await ctx.RespondAsync(embed: embed4);
+                    break;
+            }            
+        }
+
+        [Command("autoresponse"), Description("Automatically sends response to specified message. Syntax: -/autoresponse (word to respond to) (automatic response)")]
+        [RequirePermissions(Permissions.BanMembers)]
+        public async Task Autoresponse(CommandContext ctx, string target, string autores)
+        {
+            await ctx.RespondAsync("Configuring automated response...");
+            ctx.Client.MessageCreated += async e =>
+            {
+                if (e.Message.Channel.Guild.Equals(ctx.Guild))
+                {
+                    if (e.Message.Content.Equals(target))
+                        await ctx.RespondAsync(autores.ToString());
+                }
+            };
+        }
+
+
+        [Command("blacklist"), Description("Blacklist specified word, if word is entered in chat it will automatically get deleted. If blacklist level is high any words containing the blacklisted word will get deleted. Low level will only delete messages specifically containing that word. Syntax: -/blacklist (word) (level).)")]
+        [RequirePermissions(Permissions.BanMembers)]
+        public async Task Blacklist(CommandContext ctx, string black, string level)
+        {
+            if (level == "low")
+            {
+                await ctx.RespondAsync($"{black} is now blacklisted at a low level");
+                ctx.Client.MessageCreated += async e =>
+                {
+                    if (e.Message.Channel.Guild.Equals(ctx.Guild))
+                    {
+                        if (e.Message.Content.Equals(black))
+                            await e.Message.DeleteAsync();
+                    }
+                };
+            }
+            if (level == "high")
+            {
+                await ctx.RespondAsync($"{black} is now blacklisted at a high level");
+                ctx.Client.MessageCreated += async e =>
+                {
+                    if (e.Message.Channel.Guild.Equals(ctx.Guild))
+                    {
+                        if (e.Message.Content.Contains(black))
+                            await e.Message.DeleteAsync();
+                    }
+                };
+            }
+            
+        }
+
+        [Command("timer"), Description("Starts a timer. Syntax: -/timer (time method (sec, min, hour)), time amount (ex; 45, 25)). ")]
+        public async Task Ping(CommandContext ctx, string mth, int amt)
+        {
+            switch (mth)
+            {
+                case "sec":
+                    int time = amt * 1000;
+                    await ctx.RespondAsync($"Timer set for {amt} seconds");
+                    await Task.Delay(time);
+                    await ctx.RespondAsync(ctx.User.Mention);
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Title = $"Timer",
+                        Description = $"Timer ended for {amt} seconds",
+                        Color = DiscordColor.Aquamarine,
+                    };
+                    await ctx.RespondAsync(embed: embed);
+                    break;
+                case "min":
+                    int time2 = amt * 60000;
+                    await ctx.RespondAsync($"Timer set for {amt} minutes");
+                    await Task.Delay(time2);
+                    await ctx.RespondAsync(ctx.User.Mention);
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Title = $"Timer - Minutes",
+                        Description = $"Timer ended for {amt} minutes",
+                    };
+                    await ctx.RespondAsync(embed: embed2);                   
+                    break;
+                case "hour":
+                    int time3 = amt * 3600000;
+                    await ctx.RespondAsync($"Timer set for {amt} hours");
+                    await Task.Delay(time3);
+                    await ctx.RespondAsync(ctx.User.Mention);
+                    var embed3 = new DiscordEmbedBuilder
+                    {
+                        Title = $"Timer - Hours",
+                        Description = $"Timer ended for {amt} Hours",
+                    };
+                    await ctx.RespondAsync(embed: embed3);
+                    break;
+            }
+           if (mth == "sec")
+            {
+                
+            }
+        }
+
+        [Command("nick"), Description("Changes nickname of specified user")]
+        public async Task Scrape(CommandContext ctx, DiscordMember member, string nick)
+        {
+            await member.ModifyAsync(nickname: nick);
+            await ctx.RespondAsync($"Successfully changed {member.Username}s nickname");
+        }
+
+        [Command("hash"), Description("Gets a strings hash code. Syntax: -/hash (string)")]
+        public async Task Hash(CommandContext ctx, string item)
+        {
+            await ctx.RespondAsync(item.GetHashCode().ToString());
+        }
+
+        [Command("math2"), Description("Calculates more complicated math. Syntax: -/math2 (operation: Square Root(sqr), Absolute Value(abs), Cosine(cos)) (Number)")]
+        public async Task Math2(CommandContext ctx, string op, int x)
+        {
+           switch (op)
+            {
+                case "sqr":
+                    var sqr = MathF.Sqrt(x);
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Title = "Square Root",
+                        Description = sqr.ToString(),
+                        Color = DiscordColor.Azure,
+                    };
+                    await ctx.RespondAsync(embed: embed);
+                    break;
+                case "abs":
+                    var abs = MathF.Abs(x);
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Title = "Absolute Value",
+                        Description = abs.ToString(),
+                        Color = DiscordColor.Azure,
+                    };
+                    await ctx.RespondAsync(embed: embed2);
+                    break;
+                case "cos":
+                    var cos = MathF.Cos(x);
+                    var embed3 = new DiscordEmbedBuilder
+                    {
+                        Title = "Cosine",
+                        Description = cos.ToString(),
+                        Color = DiscordColor.Azure,
+                    };
+                    await ctx.RespondAsync(embed: embed3);
                     break;
             }
         }
