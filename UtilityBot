@@ -28,7 +28,7 @@ namespace DiscordBotAttempt3
         {
             discord = new DiscordClient(new DiscordConfiguration
             {
-                Token = "TOKENHERE",
+                Token = "NzU4MzU3NDYzMTg2OTMxNzg2.X2txbA.k07-jaOj-JDjp9PVrwGX-iDAShM",
                 TokenType = TokenType.Bot,
                 UseInternalLogHandler = true,
                 LogLevel = LogLevel.Debug,
@@ -45,7 +45,10 @@ namespace DiscordBotAttempt3
             {
                 await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Resumed client");
             };
+            var cfg = discord.UseInteractivity(new InteractivityConfiguration
+            {
 
+        });
             commands.RegisterCommands<MyCommands>();
 
             await discord.ConnectAsync();
@@ -61,8 +64,8 @@ namespace DiscordBotAttempt3
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Ban(CommandContext ctx, DiscordMember member, string reason)
         {
-            await member.SendMessageAsync($"You have been banned from {ctx.Guild.Name} for {reason}");
             await ctx.Guild.BanMemberAsync(member);
+            await member.SendMessageAsync($"You have been banned from {ctx.Guild.Name} for {reason}");
             await ctx.RespondAsync($"Successfully banned {member.DisplayName} for {reason}");
         }
 
@@ -235,49 +238,52 @@ namespace DiscordBotAttempt3
         [Command("timer"), Description("Starts a timer. Syntax: -/timer (time method (sec, min, hour)), time amount (ex; 45, 25)). ")]
         public async Task Ping(CommandContext ctx, string mth, int amt)
         {
-            switch (mth)
+            if (amt > 0)
             {
-                case "sec":
-                    int time = amt * 1000;
-                    await ctx.RespondAsync($"Timer set for {amt} seconds");
-                    await Task.Delay(time);
-                    await ctx.RespondAsync(ctx.User.Mention);
-                    var embed = new DiscordEmbedBuilder
-                    {
-                        Title = $"Timer",
-                        Description = $"Timer ended for {amt} seconds",
-                        Color = DiscordColor.Aquamarine,
-                    };
-                    await ctx.RespondAsync(embed: embed);
-                    break;
-                case "min":
-                    int time2 = amt * 60000;
-                    await ctx.RespondAsync($"Timer set for {amt} minutes");
-                    await Task.Delay(time2);
-                    await ctx.RespondAsync(ctx.User.Mention);
-                    var embed2 = new DiscordEmbedBuilder
-                    {
-                        Title = $"Timer - Minutes",
-                        Description = $"Timer ended for {amt} minutes",
-                    };
-                    await ctx.RespondAsync(embed: embed2);                   
-                    break;
-                case "hour":
-                    int time3 = amt * 3600000;
-                    await ctx.RespondAsync($"Timer set for {amt} hours");
-                    await Task.Delay(time3);
-                    await ctx.RespondAsync(ctx.User.Mention);
-                    var embed3 = new DiscordEmbedBuilder
-                    {
-                        Title = $"Timer - Hours",
-                        Description = $"Timer ended for {amt} Hours",
-                    };
-                    await ctx.RespondAsync(embed: embed3);
-                    break;
+                switch (mth)
+                {
+                    case "sec":
+                        int time = amt * 1000;
+                        await ctx.RespondAsync($"Timer set for {amt} seconds");
+                        await Task.Delay(time);
+                        await ctx.RespondAsync(ctx.User.Mention);
+                        var embed = new DiscordEmbedBuilder
+                        {
+                            Title = $"Timer",
+                            Description = $"Timer ended for {amt} seconds",
+                            Color = DiscordColor.Aquamarine,
+                        };
+                        await ctx.RespondAsync(embed: embed);
+                        break;
+                    case "min":
+                        int time2 = amt * 60000;
+                        await ctx.RespondAsync($"Timer set for {amt} minutes");
+                        await Task.Delay(time2);
+                        await ctx.RespondAsync(ctx.User.Mention);
+                        var embed2 = new DiscordEmbedBuilder
+                        {
+                            Title = $"Timer - Minutes",
+                            Description = $"Timer ended for {amt} minutes",
+                        };
+                        await ctx.RespondAsync(embed: embed2);
+                        break;
+                    case "hour":
+                        int time3 = amt * 3600000;
+                        await ctx.RespondAsync($"Timer set for {amt} hours");
+                        await Task.Delay(time3);
+                        await ctx.RespondAsync(ctx.User.Mention);
+                        var embed3 = new DiscordEmbedBuilder
+                        {
+                            Title = $"Timer - Hours",
+                            Description = $"Timer ended for {amt} Hours",
+                        };
+                        await ctx.RespondAsync(embed: embed3);
+                        break;
+                }
             }
-           if (mth == "sec")
+            else if (amt <= 0)
             {
-                
+                await ctx.RespondAsync("Number cannot be negative, mr pepper");
             }
         }
 
@@ -329,6 +335,95 @@ namespace DiscordBotAttempt3
                     };
                     await ctx.RespondAsync(embed: embed3);
                     break;
+            }
+        }
+
+        [Command("dis"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
+        public async Task Dis(CommandContext ctx, [Description("Member to execute as")] DiscordMember member, [RemainingText, Description("Command text to execute")] string command)
+        {
+            var cmds = ctx.CommandsNext;
+            await cmds.SudoAsync(member, ctx.Channel, command);
+        }
+
+
+        [Command("summon"), Description("Sends a message to a specified user. Syntax: -/summon (USERID) (Method to summon (msg = bot will DM target), (mnt = bot will mention target in text channel)). Command has a delay of 10 seconds to prevent spam.")]
+        public async Task Summon(CommandContext ctx, long uid, string method)
+        {
+            var member = ctx.Guild.GetMemberAsync(Convert.ToUInt64(uid)).Result; 
+            if (member != ctx.User && !member.IsBot)
+            switch (method)
+            {
+                case "msg":
+                    await member.SendMessageAsync($"You have been summoned by {ctx.User.Username} in {ctx.Guild.Name}");
+                    await Task.Delay(10000);
+                    break;
+                case "mnt":
+                    await ctx.RespondAsync($"{member.Mention} You have been summoned by {ctx.User.Username}");
+                    await Task.Delay(10000);
+                    break;
+
+            }
+            else
+            {
+                await ctx.RespondAsync($"Error, You either tried to summon yourself or you tried to summon a bot.");
+                await Task.Delay(3000);
+            }
+        }
+
+        [Command("alarm"), Description("Sets an alarm, only uses military time (24 hour format) Syntax: -/alarm (time), ex: -/alarm (23:43) will ping you at 11:43 PM")]
+        public async Task Alarm(CommandContext ctx, string time)
+        {
+            var val = time.Split(":");
+            int hour = Convert.ToInt32(val[0]);
+            var minute = Convert.ToInt32(val[1]);
+
+            if (hour >= 0 && hour <= 23 && minute >= 0 && minute < 60)
+            {
+                var chour = DateTime.Now.Hour;
+                var cminute = DateTime.Now.Minute;
+
+                if (minute > cminute)
+                {
+                    var waithourms = hour -= chour;
+                    var waitminutems = minute -= cminute;
+                    await ctx.RespondAsync($"Alarm set, I will ping you in {waithourms} hours and {waitminutems} minutes at {time}");
+
+                    var waithour = waithourms * 3600000;
+                    var waitminute = waitminutems * 60000;
+                    await Task.Delay(waithour + waitminute);
+
+                    await ctx.RespondAsync(ctx.Member.Mention);
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Title = $"Alarm",
+                        Description = $"Alarm Sounding for {DateTime.Now.Hour.ToString()}:{DateTime.Now.Minute.ToString()}",
+                        Color = DiscordColor.Aquamarine,
+                    };
+                    await ctx.RespondAsync(embed: embed);
+                }
+                else if (minute < cminute)
+                {
+                    var waithourms2 = hour -= chour;
+                    var waitminutems2 = cminute -= minute;
+                    await ctx.RespondAsync($"Alarm set, I will ping you in {waithourms2} hours and {waitminutems2} minutes at {time}");
+
+                    var waithour2 = waithourms2 * 3600000;
+                    var waitminute2 = waitminutems2 * 60000;
+                    await Task.Delay(waithour2 + waitminute2);
+
+                    await ctx.RespondAsync(ctx.Member.Mention);
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Title = $"Alarm",
+                        Description = $"Alarm Sounding for {DateTime.Now.Hour.ToString()}:{DateTime.Now.Minute.ToString()}",
+                        Color = DiscordColor.Aquamarine,
+                    };
+                    await ctx.RespondAsync(embed: embed2);
+                }
+            }
+            else
+            {
+                await ctx.RespondAsync("Error: You either put a time higher than 23 or a negative time");
             }
         }
     }
