@@ -28,7 +28,7 @@ namespace DiscordBotAttempt3
         {
             discord = new DiscordClient(new DiscordConfiguration
             {
-                Token = "NzU4MzU3NDYzMTg2OTMxNzg2.X2txbA.k07-jaOj-JDjp9PVrwGX-iDAShM",
+                Token = "TOKENHERE",
                 TokenType = TokenType.Bot,
                 UseInternalLogHandler = true,
                 LogLevel = LogLevel.Debug,
