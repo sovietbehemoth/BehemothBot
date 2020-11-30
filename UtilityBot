@@ -111,7 +111,7 @@ namespace DiscordBotAttempt3
             await ctx.RespondAsync(embed: embed);
         }
 
-        [Command("userinfo"), Description("Provides basic information about the discord server")]
+        [Command("userinfo"), Description("Provides basic information about the discord user, this version of the command requires the users mention.")]
         public async Task Userinfo(CommandContext ctx, DiscordMember member)
         {
             var user = member.Equals(ctx.User);
@@ -139,7 +139,37 @@ namespace DiscordBotAttempt3
                     break;
             }
         }
-          
+
+        [Command("userinfo2"), Description("Provides basic information about the discord user, this version of the command requires the users ID.")]
+        public async Task Userinfo2(CommandContext ctx, long uid)
+        {
+            var member = ctx.Guild.GetMemberAsync(Convert.ToUInt64(uid)).Result;
+            var self = member.Equals(ctx.User);
+            switch (self)
+            {
+                case true:
+                    var embed = new DiscordEmbedBuilder
+                    {
+                        Title = member.DisplayName,
+                        ImageUrl = member.AvatarUrl,
+                        Description = $"Your account was created on {member.CreationTimestamp.DateTime}. You joined this server on {member.JoinedAt.DateTime}",
+                        Color = DiscordColor.CornflowerBlue,
+                    };
+                    await ctx.RespondAsync(embed: embed);
+                    break;
+                case false:
+                    var embed2 = new DiscordEmbedBuilder
+                    {
+                        Title = member.DisplayName,
+                        ImageUrl = member.AvatarUrl,
+                        Description = $"This users account was created on {member.CreationTimestamp.DateTime}. They joined this server on {member.JoinedAt.DateTime}",
+                        Color = DiscordColor.CornflowerBlue,
+                    };
+                    await ctx.RespondAsync(embed: embed2);
+                    break;
+            }
+        }
+
         [Command("math"), Description("Does simple maths, can do division (div), multiplication (mult), subtraction (sub), and addition (add). (Syntax: -/math (operation) (number1) (number2)")]
         public async Task Math(CommandContext ctx, string op, int x, int y)
         {
@@ -190,15 +220,18 @@ namespace DiscordBotAttempt3
 
         [Command("autoresponse"), Description("Automatically sends response to specified message. Syntax: -/autoresponse (word to respond to) (automatic response)")]
         [RequirePermissions(Permissions.BanMembers)]
-        public async Task Autoresponse(CommandContext ctx, string target, string autores)
+        public async Task Autoresponse(CommandContext ctx, string target, [RemainingText] string autores)
         {
             await ctx.RespondAsync("Configuring automated response...");
             ctx.Client.MessageCreated += async e =>
             {
                 if (e.Message.Channel.Guild.Equals(ctx.Guild))
                 {
-                    if (e.Message.Content.Equals(target))
-                        await ctx.RespondAsync(autores.ToString());
+                    if (!e.Message.Author.IsBot)
+                    {
+                        if (e.Message.Content.Equals(target))
+                            await e.Message.Channel.SendMessageAsync(autores.ToString());
+                    }
                 }
             };
         }
@@ -231,8 +264,16 @@ namespace DiscordBotAttempt3
                             await e.Message.DeleteAsync();
                     }
                 };
+            }          
+        }
+
+        [Command("reminder"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
+        public async Task Reminder(CommandContext ctx, string spec)
+        {
+          switch (spec)
+            {
+                
             }
-            
         }
 
         [Command("timer"), Description("Starts a timer. Syntax: -/timer (time method (sec, min, hour)), time amount (ex; 45, 25)). ")]
@@ -345,23 +386,70 @@ namespace DiscordBotAttempt3
             await cmds.SudoAsync(member, ctx.Channel, command);
         }
 
-
-        [Command("summon"), Description("Sends a message to a specified user. Syntax: -/summon (USERID) (Method to summon (msg = bot will DM target), (mnt = bot will mention target in text channel)). Command has a delay of 10 seconds to prevent spam.")]
-        public async Task Summon(CommandContext ctx, long uid, string method)
+        [Command("call"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
+        public async Task Call(CommandContext ctx, string dsharp)
         {
-            var member = ctx.Guild.GetMemberAsync(Convert.ToUInt64(uid)).Result; 
-            if (member != ctx.User && !member.IsBot)
-            switch (method)
+            if (dsharp == "dsharp")
             {
-                case "msg":
-                    await member.SendMessageAsync($"You have been summoned by {ctx.User.Username} in {ctx.Guild.Name}");
-                    await Task.Delay(10000);
-                    break;
-                case "mnt":
-                    await ctx.RespondAsync($"{member.Mention} You have been summoned by {ctx.User.Username}");
-                    await Task.Delay(10000);
-                    break;
+                await ctx.RespondAsync($"{ctx.Client} is online and working");
+            }
+        }
 
+        [Command("info"), Description("Displays information about the bot")]
+        public async Task Info(CommandContext ctx)
+        {
+            var embed3 = new DiscordEmbedBuilder
+            {
+                Title = "BehemothBot Information",
+                Description = $"BehemothBot was created by MrBehemoth using C# and JavaScript",
+                Color = DiscordColor.Goldenrod,
+            };
+            await ctx.RespondAsync(embed: embed3);
+        }
+
+        [Command("summon2"), Description("Sends a message to a specified user. Syntax: -/summon (USERID) (Method to summon (msg = bot will DM target), (mnt = bot will mention target in text channel)). Command has a delay of 10 seconds to prevent spam.")]
+        public async Task Summon2(CommandContext ctx, long uid, string method)
+        {
+            var member = ctx.Guild.GetMemberAsync(Convert.ToUInt64(uid)).Result;
+            if (member != ctx.User && !member.IsBot)
+            {
+                switch (method)
+                {
+                    case "msg":
+                        await member.SendMessageAsync($"You have been summoned by {ctx.User.Username} in {ctx.Guild.Name}");
+                        await Task.Delay(10000);
+                        break;
+                    case "mnt":
+                        await ctx.RespondAsync($"{member.Mention} You have been summoned by {ctx.User.Username}");
+                        await Task.Delay(10000);
+                        break;
+
+                }
+            }
+            else
+            {
+                await ctx.RespondAsync($"Error, You either tried to summon yourself or you tried to summon a bot.");
+                await Task.Delay(3000);
+            }
+        }
+
+        [Command("summon"), Description("Sends a message to a specified user. Refer to summon2 if you want to use a userID. Syntax: -/summon (User Mention) (Method to summon (msg = bot will DM target), (mnt = bot will mention target in text channel)). Command has a delay of 10 seconds to prevent spam.")]
+        public async Task Summon(CommandContext ctx, DiscordMember member, string method)
+        {
+            if (member != ctx.User && !member.IsBot)
+            {
+                switch (method)
+                {
+                    case "msg":
+                        await member.SendMessageAsync($"You have been summoned by {ctx.User.Username} in {ctx.Guild.Name}");
+                        await Task.Delay(10000);
+                        break;
+                    case "mnt":
+                        await ctx.RespondAsync($"{member.Mention} You have been summoned by {ctx.User.Username}");
+                        await Task.Delay(10000);
+                        break;
+
+                }
             }
             else
             {
@@ -371,7 +459,7 @@ namespace DiscordBotAttempt3
         }
 
         [Command("alarm"), Description("Sets an alarm, only uses military time (24 hour format) Syntax: -/alarm (time), ex: -/alarm (23:43) will ping you at 11:43 PM")]
-        public async Task Alarm(CommandContext ctx, string time)
+        public async Task Alarm(CommandContext ctx, string time, [RemainingText] string reason)
         {
             var val = time.Split(":");
             int hour = Convert.ToInt32(val[0]);
@@ -395,7 +483,7 @@ namespace DiscordBotAttempt3
                     await ctx.RespondAsync(ctx.Member.Mention);
                     var embed = new DiscordEmbedBuilder
                     {
-                        Title = $"Alarm",
+                        Title = $"Alarm: {reason}",
                         Description = $"Alarm Sounding for {DateTime.Now.Hour.ToString()}:{DateTime.Now.Minute.ToString()}",
                         Color = DiscordColor.Aquamarine,
                     };
@@ -414,7 +502,7 @@ namespace DiscordBotAttempt3
                     await ctx.RespondAsync(ctx.Member.Mention);
                     var embed2 = new DiscordEmbedBuilder
                     {
-                        Title = $"Alarm",
+                        Title = $"Alarm: {reason}",
                         Description = $"Alarm Sounding for {DateTime.Now.Hour.ToString()}:{DateTime.Now.Minute.ToString()}",
                         Color = DiscordColor.Aquamarine,
                     };
