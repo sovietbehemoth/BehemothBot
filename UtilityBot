@@ -4,20 +4,17 @@ using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
+using DSharpPlus.Interactivity.Enums;
 using DSharpPlus.Entities;
 using DSharpPlus.VoiceNext;
 using DescriptionAttribute = DSharpPlus.CommandsNext.Attributes.DescriptionAttribute;
-
 
 namespace DiscordBotAttempt3
 {
     public static class Program
     {
         static DiscordClient discord;
-        static CommandsNextModule commands;
-        static InteractivityModule interactivity;
-        static VoiceNextClient voice;
-
 
         static void Main(string[] args)
         {
@@ -28,27 +25,42 @@ namespace DiscordBotAttempt3
         {
             discord = new DiscordClient(new DiscordConfiguration
             {
-                Token = "TOKENHERE",
+                Token = TOKENHERE,
                 TokenType = TokenType.Bot,
-                UseInternalLogHandler = true,
-                LogLevel = LogLevel.Debug,
+                LogTimestampFormat = "MMM dd yyyy - hh:mm:ss tt",
             });
-            commands = discord.UseCommandsNext(new CommandsNextConfiguration
+            discord.UseInteractivity(new InteractivityConfiguration()
             {
-                StringPrefix = "-/"
+                PollBehaviour = PollBehaviour.KeepEmojis,
+                Timeout = TimeSpan.FromSeconds(30)
             });
-            discord.GuildMemberAdded += async e =>
+            var commands = discord.UseCommandsNext(new CommandsNextConfiguration()
+            {
+                StringPrefixes = new[] { "-/" }
+            });
+            discord.GuildMemberAdded += async (s, e) =>
             {
                 await e.Member.SendMessageAsync($"Welcome to {e.Guild.Name}");
             };
-            discord.Resumed += async e =>
+            discord.SocketErrored += async (s, e) =>
             {
-                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Resumed client");
+                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Hey rock man, somethings wrong with me");
+                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync($"Error: {e.Exception}" +
+                    $"Handling: {e.Handled}");
             };
-            var cfg = discord.UseInteractivity(new InteractivityConfiguration
+            discord.UnknownEvent += async (s, e) =>
             {
-
-        });
+                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Hey rock man, somethings wrong with me");
+                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync($"{e.EventName} has happened" +
+                    $"Handling: {e.Handled}" +
+                    $"Info: {e.Json}");
+            };
+            discord.Resumed += async (s, e) =>
+            {
+                await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Resumed client" +
+                    $"Handling: {e.Handled}");
+            };
+            
             commands.RegisterCommands<MyCommands>();
 
             await discord.ConnectAsync();
@@ -58,32 +70,52 @@ namespace DiscordBotAttempt3
         }
 
     }
-    public class MyCommands
+    public class MyCommands : BaseCommandModule
     {
         [Command("ban"), Description("Bans specified user")]
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Ban(CommandContext ctx, DiscordMember member, string reason)
         {
-            await ctx.Guild.BanMemberAsync(member);
-            await member.SendMessageAsync($"You have been banned from {ctx.Guild.Name} for {reason}");
-            await ctx.RespondAsync($"Successfully banned {member.DisplayName} for {reason}");
+            try
+            {
+                await ctx.Guild.BanMemberAsync(member);
+                await member.SendMessageAsync($"You have been banned from {ctx.Guild.Name} for {reason}");
+                await ctx.RespondAsync($"Successfully banned {member.DisplayName} for {reason}");
+            }
+            catch
+            {
+                await ctx.RespondAsync("Error: Could not ban member");
+            }
         }
 
         [Command("unban"), Description("Unbans specified user")]
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Unban(CommandContext ctx, DiscordUser user)
         {
-            await ctx.Guild.UnbanMemberAsync(user);
+            await ctx.Guild.UnbanMemberAsync(user.Id);
             await ctx.RespondAsync($"Successfully unbanned {user.Username}");
+        }
+
+        [Command("check"), Description("Checks specifics about whether BehemothBot is online")]
+        public async Task Check(CommandContext ctx)
+        {
+            await ctx.RespondAsync("If you are only seeing this then BehemothBot is partially offline (JavaScript portion). If you are only seeing this then most commands will work because BehemothBot is mostly built upon a D# client");
         }
 
         [Command("kick"), Description("Kicks specified user")]
         [RequirePermissions(Permissions.KickMembers)]
         public async Task Kick(CommandContext ctx, DiscordMember member, string reason)
         {
-            await member.SendMessageAsync($"You have been kicked from {ctx.Guild.Name}.");
-            await ctx.Guild.RemoveMemberAsync(member);
-            await ctx.RespondAsync($"Successfully kicked {member.DisplayName}");
+            try
+            {
+                await member.SendMessageAsync($"You have been kicked from {ctx.Guild.Name}.");
+                await ctx.Guild.BanMemberAsync(member);
+                await ctx.Guild.UnbanMemberAsync(member.Id, reason);
+                await ctx.RespondAsync($"Successfully kicked {member.DisplayName}");
+            } catch
+            {
+                await ctx.RespondAsync("Error: Could not kick member");
+            }
         }
 
         [Command("ping"), Description("Checks the latency of the client to the server, check if BehemothBot is online")]
@@ -143,7 +175,9 @@ namespace DiscordBotAttempt3
         [Command("userinfo2"), Description("Provides basic information about the discord user, this version of the command requires the users ID.")]
         public async Task Userinfo2(CommandContext ctx, long uid)
         {
+
             var member = ctx.Guild.GetMemberAsync(Convert.ToUInt64(uid)).Result;
+
             var self = member.Equals(ctx.User);
             switch (self)
             {
@@ -170,12 +204,126 @@ namespace DiscordBotAttempt3
             }
         }
 
+        [Command("rng"), Description("Picks a random number out of the parameters chosen. Syntax: -/randomnumber <lowest> <highest>")]
+        public async Task Randomnum(CommandContext ctx, int x, int y)
+        {
+            if (x < y)
+            {
+                Random r = new Random();
+                int randomval = r.Next(x, y);
+                var embed = new DiscordEmbedBuilder
+                {
+                    Title = $"Random Number ({x} - {y})",
+                    Description = randomval.ToString(),
+                    Color = DiscordColor.Azure,
+                };
+                await ctx.RespondAsync(embed: embed);
+            }
+            else if (x == y)
+            {
+                await ctx.RespondAsync("Error: The two numbers cannot be equal");
+            }
+            else if (x > y)
+            {
+                await ctx.RespondAsync("Error: The first number must be less than the second");
+            }
+        }
+
+        [Command("randomstring"), Description("Will return a completely random collection of letters, numbers, and other characters")]
+        public async Task Randomstring(CommandContext ctx)
+        {
+            //generate capital letters
+            string[] pwd1 = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
+            var pwd1cap = pwd1[new Random().Next(0, pwd1.Length)];
+            var pwd1cap2 = pwd1[new Random().Next(0, pwd1.Length)];
+            var pwd1cap3 = pwd1[new Random().Next(0, pwd1.Length)];
+
+            var bpwd1cap = pwd1[new Random().Next(0, pwd1.Length)];
+            var bpwd1cap2 = pwd1[new Random().Next(0, pwd1.Length)];
+            var bpwd1cap3 = pwd1[new Random().Next(0, pwd1.Length)];
+
+            var cpwd1cap = pwd1[new Random().Next(0, pwd1.Length)];
+            var cpwd1cap2 = pwd1[new Random().Next(0, pwd1.Length)];
+            var cpwd1cap3 = pwd1[new Random().Next(0, pwd1.Length)];
+
+            //generate lowercase letters
+            var pwd1low = pwd1[new Random().Next(0, pwd1.Length)];
+            var pwd1low2 = pwd1[new Random().Next(0, pwd1.Length)];
+            var pwd1low3 = pwd1[new Random().Next(0, pwd1.Length)];
+
+            var bpwd1low = pwd1[new Random().Next(0, pwd1.Length)];
+            var bpwd1low2 = pwd1[new Random().Next(0, pwd1.Length)];
+            var bpwd1low3 = pwd1[new Random().Next(0, pwd1.Length)];
+
+            var cpwd1low = pwd1[new Random().Next(0, pwd1.Length)];
+            var cpwd1low2 = pwd1[new Random().Next(0, pwd1.Length)];
+            var cpwd1low3 = pwd1[new Random().Next(0, pwd1.Length)];
+
+            //generate numbers
+            string[] pwd2 = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" };
+            var pwd2int = pwd2[new Random().Next(0, pwd2.Length)];
+            var pwd2int2 = pwd2[new Random().Next(0, pwd2.Length)];
+            var pwd2int3 = pwd2[new Random().Next(0, pwd2.Length)];
+
+            var bpwd2int = pwd2[new Random().Next(0, pwd2.Length)];
+            var bpwd2int2 = pwd2[new Random().Next(0, pwd2.Length)];
+            var bpwd2int3 = pwd2[new Random().Next(0, pwd2.Length)];
+
+            var cpwd2int = pwd2[new Random().Next(0, pwd2.Length)];
+            var cpwd2int2 = pwd2[new Random().Next(0, pwd2.Length)];
+            var cpwd2int3 = pwd2[new Random().Next(0, pwd2.Length)];
+
+            //generate special characters
+            string[] pwd3 = { "-", "&", "%", "$" };
+            var pwd3sp = pwd3[new Random().Next(0, pwd3.Length)];
+            var pwd3sp2 = pwd3[new Random().Next(0, pwd3.Length)];
+            var pwd3sp3 = pwd3[new Random().Next(0, pwd3.Length)];
+
+            var bpwd3sp = pwd3[new Random().Next(0, pwd3.Length)];
+            var bpwd3sp2 = pwd3[new Random().Next(0, pwd3.Length)];
+            var bpwd3sp3 = pwd3[new Random().Next(0, pwd3.Length)];
+
+            var cpwd3sp = pwd3[new Random().Next(0, pwd3.Length)];
+            var cpwd3sp2 = pwd3[new Random().Next(0, pwd3.Length)];
+            var cpwd3sp3 = pwd3[new Random().Next(0, pwd3.Length)];
+
+            //generate random password
+            var pwda = pwd1cap + pwd2int + pwd1low.ToLower() + pwd3sp;
+            var pwdb = pwd1low2.ToLower() + pwd3sp2 + pwd1cap2 + pwd2int2;
+            var pwdc = pwd2int3 + pwd1cap3 + pwd3sp3 + pwd1low3.ToLower();
+            string[] pwdrand = { pwda, pwdb, pwdc };
+
+            var pwdd = bpwd1cap + bpwd2int + bpwd1low.ToLower() + bpwd3sp;
+            var pwde = bpwd1low2.ToLower() + bpwd3sp2 + bpwd1cap2 + bpwd2int2;
+            var pwdf = bpwd2int3 + bpwd1cap3 + bpwd3sp3 + bpwd1low3.ToLower();
+            string[] bpwdrand = { pwdd, pwde, pwdf };
+
+            var pwdg = cpwd1cap + cpwd2int + cpwd1low.ToLower() + cpwd3sp;
+            var pwdh = cpwd1low2.ToLower() + cpwd3sp2 + cpwd1cap2 + cpwd2int2;
+            var pwdi = cpwd2int3 + cpwd1cap3 + cpwd3sp3 + cpwd1low3.ToLower();
+            string[] cpwdrand = { pwdg, pwdh, pwdi };
+
+            var pwdrand1 = pwdrand[new Random().Next(0, pwdrand.Length)];
+            var pwdrand2 = bpwdrand[new Random().Next(0, bpwdrand.Length)];
+            var pwdrand3 = cpwdrand[new Random().Next(0, cpwdrand.Length)];
+            var pwd = pwdrand1 + pwdrand2 + pwdrand3;
+
+            //return password
+            var embed = new DiscordEmbedBuilder
+            {
+                Title = "Random String",
+                Description = pwd.ToString(),
+                Color = DiscordColor.IndianRed,
+            };
+            await ctx.RespondAsync(embed: embed);
+        }
+
         [Command("math"), Description("Does simple maths, can do division (div), multiplication (mult), subtraction (sub), and addition (add). (Syntax: -/math (operation) (number1) (number2)")]
-        public async Task Math(CommandContext ctx, string op, int x, int y)
+        public async Task Math(CommandContext ctx, int x, string op, int y)
         {
             switch (op)
             {
-                case "mult":
+                case "*":
                     var product = x * y;
                     var embed = new DiscordEmbedBuilder
                     {
@@ -185,17 +333,17 @@ namespace DiscordBotAttempt3
                     };
                     await ctx.RespondAsync(embed: embed);
                     break;
-                case "div":
+                case "/":
                     var product2 = x / y;
-                    var embed2 = new DiscordEmbedBuilder
-                    {
-                        Title = "Quotient",
-                        Description = product2.ToString(),
-                        Color = DiscordColor.Azure,
-                    };
-                    await ctx.RespondAsync(embed: embed2);
+                        var embed2 = new DiscordEmbedBuilder
+                        {
+                            Title = "Quotient",
+                            Description = product2.ToString(),
+                            Color = DiscordColor.Azure,
+                        };
+                        await ctx.RespondAsync(embed: embed2);              
                     break;
-                case "add":
+                case "+":
                     var sum = x += y;
                     var embed3 = new DiscordEmbedBuilder
                     {
@@ -205,7 +353,7 @@ namespace DiscordBotAttempt3
                     };
                     await ctx.RespondAsync(embed: embed3);
                     break;
-                case "sub":
+                case "-":
                     var res = x -= y;
                     var embed4 = new DiscordEmbedBuilder
                     {
@@ -215,6 +363,19 @@ namespace DiscordBotAttempt3
                     };
                     await ctx.RespondAsync(embed: embed4);
                     break;
+                case "^":
+                    var pwr = MathF.Pow(x, y);
+                    var embed5 = new DiscordEmbedBuilder
+                    {
+                        Title = "Exponential value",
+                        Description = pwr.ToString(),
+                        Color = DiscordColor.Azure,
+                    };
+                    await ctx.RespondAsync(embed: embed5);
+                    break;
+                default:
+                    await ctx.RespondAsync("Error: Argument did not fall under specified operators");
+                    break;
             }            
         }
 
@@ -223,14 +384,14 @@ namespace DiscordBotAttempt3
         public async Task Autoresponse(CommandContext ctx, string target, [RemainingText] string autores)
         {
             await ctx.RespondAsync("Configuring automated response...");
-            ctx.Client.MessageCreated += async e =>
+            ctx.Client.MessageCreated += async (e, s) =>
             {
-                if (e.Message.Channel.Guild.Equals(ctx.Guild))
+                if (s.Message.Channel.Guild.Equals(ctx.Guild))
                 {
-                    if (!e.Message.Author.IsBot)
+                    if (!s.Message.Author.IsBot)
                     {
-                        if (e.Message.Content.Equals(target))
-                            await e.Message.Channel.SendMessageAsync(autores.ToString());
+                        if (s.Message.Content.Equals(target))
+                            await s.Message.Channel.SendMessageAsync(autores.ToString());
                     }
                 }
             };
@@ -241,38 +402,89 @@ namespace DiscordBotAttempt3
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Blacklist(CommandContext ctx, string black, string level)
         {
-            if (level == "low")
+            switch (level)
             {
-                await ctx.RespondAsync($"{black} is now blacklisted at a low level");
-                ctx.Client.MessageCreated += async e =>
-                {
-                    if (e.Message.Channel.Guild.Equals(ctx.Guild))
+                case "low":
+                    await ctx.RespondAsync($"{black} is now blacklisted at a low level");
+                    ctx.Client.MessageCreated += async (e, s) =>
                     {
-                        if (e.Message.Content.Equals(black))
-                            await e.Message.DeleteAsync();
-                    }
-                };
+                        if (s.Message.Channel.Guild.Equals(ctx.Guild))
+                        {
+                            if (s.Message.Content.Equals(black))
+                                await s.Message.DeleteAsync();
+                        }
+                    };
+                    break;
+                case "high":
+                        await ctx.RespondAsync($"{black} is now blacklisted at a high level");
+                        ctx.Client.MessageCreated += async (e, s) =>
+                        {
+                            if (s.Message.Channel.Guild.Equals(ctx.Guild))
+                            {
+                                if (s.Message.Content.Contains(black))
+                                    await s.Message.DeleteAsync();
+                            }
+                        };
+                    break;
+                default:
+                    await ctx.RespondAsync("Error: Level can either be high or low");
+                    break;
             }
-            if (level == "high")
+        }      
+
+        [Command("r"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
+        [Hidden]
+        public async Task Reminder(CommandContext ctx,[RemainingText]string sub)
+        {
+            await ctx.Client.GetChannelAsync(768501915104968755).Result.SendMessageAsync(sub);
+            await ctx.RespondAsync("Respond with *confirm* to continue.");
+            var result = await ctx.Message.GetNextMessageAsync(m =>
             {
-                await ctx.RespondAsync($"{black} is now blacklisted at a high level");
-                ctx.Client.MessageCreated += async e =>
-                {
-                    if (e.Message.Channel.Guild.Equals(ctx.Guild))
-                    {
-                        if (e.Message.Content.Contains(black))
-                            await e.Message.DeleteAsync();
-                    }
-                };
-            }          
+                return m.Content.ToLower() == "confirm";
+            });
+
+            if (!result.TimedOut) await ctx.RespondAsync("Action confirmed.");
         }
 
-        [Command("reminder"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
-        public async Task Reminder(CommandContext ctx, string spec)
+        [Command("snooze"), Description("Sets a 5 minute timer, used in conjunction with the alarm or timer command")]
+        [Hidden]
+        public async Task Snooze(CommandContext ctx, [RemainingText] string sub)
         {
-          switch (spec)
+            await Task.Delay(300000);
+            var embed = new DiscordEmbedBuilder
             {
-                
+                Title = $"Snooze",
+                Description = $"Snooze timer ended",
+                Color = DiscordColor.Aquamarine,
+            };
+            await ctx.RespondAsync(embed: embed);
+
+        }
+
+        [Command("flip"), Description("Flips a coin")]
+        public async Task Flip(CommandContext ctx)
+        {
+            Random r = new Random();
+            int randomval = r.Next(0, 100);
+            if (randomval <= 50)
+            {
+                var embed = new DiscordEmbedBuilder
+                {
+                    Title = $"Coin Flip",
+                    Description = $"Heads",
+                    Color = DiscordColor.Aquamarine,
+                };
+                await ctx.RespondAsync(embed: embed);
+            }
+            else if (randomval > 50 && randomval <= 100)
+            {
+                var embed2 = new DiscordEmbedBuilder
+                {
+                    Title = $"Coin Flip",
+                    Description = $"Tails",
+                    Color = DiscordColor.Aquamarine,
+                };
+                await ctx.RespondAsync(embed: embed2);
             }
         }
 
@@ -320,18 +532,20 @@ namespace DiscordBotAttempt3
                         };
                         await ctx.RespondAsync(embed: embed3);
                         break;
+                    default:
+                        await ctx.RespondAsync("Error: Time measurement not recognized, use sec, min, or hour.");
+                        break;
                 }
             }
             else if (amt <= 0)
             {
-                await ctx.RespondAsync("Number cannot be negative, mr pepper");
+                await ctx.RespondAsync("Error: Number cannot be negative");
             }
         }
 
         [Command("nick"), Description("Changes nickname of specified user")]
         public async Task Scrape(CommandContext ctx, DiscordMember member, string nick)
         {
-            await member.ModifyAsync(nickname: nick);
             await ctx.RespondAsync($"Successfully changed {member.Username}s nickname");
         }
 
@@ -376,23 +590,25 @@ namespace DiscordBotAttempt3
                     };
                     await ctx.RespondAsync(embed: embed3);
                     break;
+                default:
+                    await ctx.RespondAsync("Error: Operation not recognized");
+                    break;
             }
         }
 
         [Command("dis"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
-        public async Task Dis(CommandContext ctx, [Description("Member to execute as")] DiscordMember member, [RemainingText, Description("Command text to execute")] string command)
+        public async Task Dis(CommandContext ctx, [Description("Member to execute as")] long uid, [RemainingText, Description("Command text to execute")] string command)
         {
+            var member = ctx.Guild.GetMemberAsync(Convert.ToUInt64(uid)).Result;
             var cmds = ctx.CommandsNext;
-            await cmds.SudoAsync(member, ctx.Channel, command);
+            await ctx.RespondAsync("Error: This command no longer works");
         }
 
-        [Command("call"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
-        public async Task Call(CommandContext ctx, string dsharp)
+        [Command("callsharp"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
+        [Hidden]
+        public async Task Call(CommandContext ctx)
         {
-            if (dsharp == "dsharp")
-            {
-                await ctx.RespondAsync($"{ctx.Client} is online and working");
-            }
+            await ctx.RespondAsync($"{ctx.Client} is online and working");
         }
 
         [Command("info"), Description("Displays information about the bot")]
@@ -423,12 +639,14 @@ namespace DiscordBotAttempt3
                         await ctx.RespondAsync($"{member.Mention} You have been summoned by {ctx.User.Username}");
                         await Task.Delay(10000);
                         break;
-
+                    default:
+                        await ctx.RespondAsync("Error: Summon method does not exist, use either mnt which mentions the user or msg which messages the user");
+                        break;
                 }
             }
             else
             {
-                await ctx.RespondAsync($"Error, You either tried to summon yourself or you tried to summon a bot.");
+                await ctx.RespondAsync($"Error: You either tried to summon yourself or you tried to summon a bot.");
                 await Task.Delay(3000);
             }
         }
@@ -448,12 +666,14 @@ namespace DiscordBotAttempt3
                         await ctx.RespondAsync($"{member.Mention} You have been summoned by {ctx.User.Username}");
                         await Task.Delay(10000);
                         break;
-
+                    default:
+                        await ctx.RespondAsync("Error: Summon method does not exist, use either mnt which mentions the user or msg which messages the user");
+                        break;
                 }
             }
             else
             {
-                await ctx.RespondAsync($"Error, You either tried to summon yourself or you tried to summon a bot.");
+                await ctx.RespondAsync($"Error: You either tried to summon yourself or you tried to summon a bot.");
                 await Task.Delay(3000);
             }
         }
@@ -513,6 +733,444 @@ namespace DiscordBotAttempt3
             {
                 await ctx.RespondAsync("Error: You either put a time higher than 23 or a negative time");
             }
+        }
+
+        [Command("programop"), Description("Program the bot at a low level using operations.")]
+        public async Task Prgrmop(CommandContext ctx, string output, string proc, int num1, string op, int num2, string thus, int answer, string then, string conc, [RemainingText] string concresult)
+        {
+            if (output == "outputon") await ctx.RespondAsync("Bot: Found parameters");          
+            if (proc == "if" && then == "then")
+            {
+                if (output == "outputon") await ctx.RespondAsync("Bot: If then statement identified");
+                switch (op)
+                {
+                    case "+":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Operation identified");
+                        var sum = num1 + num2;
+                        if (sum == answer && thus == "=")
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is true");
+                            switch (conc)
+                            {
+                                case "respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Formulating response");
+                                    switch (thus)
+                                    {
+                                        case "=":
+                                            if (output == "outputon") await ctx.RespondAsync("Bot: Condition identified");
+                                            await ctx.RespondAsync(concresult);
+                                            break;
+                                        default:
+                                            if (output == "outputon") await ctx.RespondAsync("Bot: Condition does not exist");
+                                            break;
+                                    }
+                                    break;
+                                case "!respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Ended with order not to respond");
+                                    break;
+                                default:
+                                    await ctx.RespondAsync("BotError: Then statement does not exist");
+                                    break;
+                            }
+                        }
+                        else if (thus == "=" && sum != answer && output == "outputon")
+                        {
+                            await ctx.RespondAsync("Bot: This statement is not true");
+                        }
+                        else if (thus == "!=")
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Condition identified");
+                            if (sum != answer)
+                            {
+                                switch (conc)
+                                {
+                                    case "respond":
+                                        await ctx.RespondAsync(concresult);
+                                        break;
+                                    case "!respond":
+                                        if (output == "outputon") await ctx.RespondAsync("Bot: Ended with order not to respond");
+                                        break;
+                                    default:
+                                        await ctx.RespondAsync("BotError: Then statement does not exist");
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                await ctx.RespondAsync("Bot: This statement is not true");
+                            }
+                        }
+                        break;
+
+                            case "*":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Operation identified");
+                        var product = num1 * num2;
+                        if (product == answer && thus == "=")
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is true");
+                            switch (conc)
+                            {
+                                case "respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Formulating response");
+                                    switch (thus)
+                                    {
+                                        case "=":
+                                            if (output == "outputon") await ctx.RespondAsync("Bot: Condition identified");
+                                            await ctx.RespondAsync(concresult);
+                                            break;
+                                        default:
+                                            if (output == "outputon") await ctx.RespondAsync("Bot: Condition does not exist");
+                                            break;
+                                    }
+                                    break;
+                                case "!respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Ended with order not to respond");
+                                    break;
+                                default:
+                                    await ctx.RespondAsync("BotError: Then statement does not exist");
+                                    break;
+                            }
+                        }
+                        else if (thus == "=" && product != answer && output == "outputon")
+                        {
+                            await ctx.RespondAsync("Bot: This statement is not true");
+                        }
+                        else if (thus == "!=")
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Condition identified");
+                            if (product != answer)
+                            {
+                                switch (conc)
+                                {
+                                    case "respond":
+                                        await ctx.RespondAsync(concresult);
+                                        break;
+                                    case "!respond":
+                                        if (output == "outputon") await ctx.RespondAsync("Bot: Ended with order not to respond");
+                                        break;
+                                    default:
+                                        await ctx.RespondAsync("BotError: Then statement does not exist");
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                await ctx.RespondAsync("Bot: This statement is not true");
+                            }
+                        }
+                        break;
+                    default:
+                    await ctx.RespondAsync("BotError: Operation does not exist");                      
+                        break;
+                }
+            }
+            else if (output == "outputon") await ctx.RespondAsync("BotError: Beginning statement does not exist");
+        }
+
+        [Command("programvar")]
+        public async Task Prgrminvar(CommandContext ctx, string output, string datatype, string dataname, string equals, string datatype2, [RemainingText]string dataname2)
+        {
+            int value;
+            if (output == "outputon") await ctx.RespondAsync("Bot: Found parameters");
+            if (equals == "=")
+            {
+                if (output == "outputon") await ctx.RespondAsync("Bot: Expression defined");              
+                switch (datatype)
+                {
+                    case "var":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Data type selected");
+                        break;
+                    case "int":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Data type selected");
+                        break;
+                    default:
+                        await ctx.RespondAsync("BotError: Data type not found");
+                        break;
+                }
+                switch (datatype2)
+                {
+                    case "var":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Variable selected");
+                        if (!int.TryParse(dataname2, out value))
+                        {
+                            await ctx.RespondAsync($"Variable {dataname} is string {dataname2}");
+                            var result = await ctx.Message.GetNextMessageAsync(m =>
+                            {
+                                return m.Content.ToLower() == "?" + dataname;
+                            });
+
+                            if (!result.TimedOut) await ctx.RespondAsync(dataname2);
+                        }
+                        var newvar = dataname2;
+                        break;
+                    case "int":                      
+                            if (datatype == "var" && int.TryParse(dataname2, out value))
+                        {
+                            var newint = dataname2;
+                            await ctx.RespondAsync($"Variable {dataname} is integer {dataname2}");
+                            var result = await ctx.Message.GetNextMessageAsync(m =>
+                            {
+                                return m.Content.ToLower() == "?" + dataname;
+                            });
+
+                            if (!result.TimedOut) await ctx.RespondAsync(dataname2);
+                        }
+                        else if (!int.TryParse(dataname2, out value))
+                        {
+                            await ctx.RespondAsync("BotError: Cannot use a string as an integer");
+                        }
+                        else if (datatype == "int")
+                        {
+                            await ctx.RespondAsync("BotError: An integer cannot equal itself, unnecessary assignment of a variable to an integer");
+                        }
+                        break;
+                    case "bool":
+                        if (!int.TryParse(dataname, out value))
+                        {
+                            switch (dataname2)
+                            {
+                                case "true":
+                                    await ctx.RespondAsync($"Variable {dataname} is true");
+                                    bool datanameboolval = true;
+                                    var result = await ctx.Message.GetNextMessageAsync(m =>
+                                    {
+                                        return m.Content.ToLower() == "?" + dataname;
+                                    });
+
+                                    if (!result.TimedOut) await ctx.RespondAsync(dataname2);
+                                    break;
+                                case "false":
+                                    await ctx.RespondAsync($"Variable {dataname} is false");
+                                    bool datanameboolval2 = false;
+                                    var result2 = await ctx.Message.GetNextMessageAsync(m =>
+                                    {
+                                        return m.Content.ToLower() == "?" + dataname;
+                                    });
+
+                                    if (!result2.TimedOut) await ctx.RespondAsync(dataname2);
+                                    break;
+                                default:
+                                    await ctx.RespondAsync("BotError: A bool value can only be true or false");
+                                    break;
+                            }
+                        }
+                        else if (int.TryParse(dataname, out value))
+                        {
+                            switch (dataname2)
+                            {
+                                case "true":
+                                    await ctx.RespondAsync($"Integer {dataname} is true");
+                                    bool datanameboolval = true;
+                                    var result = await ctx.Message.GetNextMessageAsync(m =>
+                                    {
+                                        return m.Content.ToLower() == "?" + dataname;
+                                    });
+
+                                    if (!result.TimedOut) await ctx.RespondAsync(dataname2);
+                                    break;
+                                case "false":
+                                    await ctx.RespondAsync($"Integer {dataname} is false");
+                                    bool datanameboolval2 = false;
+                                    var result2 = await ctx.Message.GetNextMessageAsync(m =>
+                                    {
+                                        return m.Content.ToLower() == "?" + dataname;
+                                    });
+
+                                    if (!result2.TimedOut) await ctx.RespondAsync(dataname2);
+                                    break;
+                                default:
+                                    await ctx.RespondAsync("BotError: A bool value can only be true or false");
+                                    break;
+                            }
+                        }
+                        break;
+                }
+            }
+            else
+            {
+                await ctx.RespondAsync($"BotError: Invalid expression term '{equals}'");
+            }
+        }
+
+        [Command("programinq"), Description("Program the bot at a low level using inequalities.")]
+        public async Task Prgrminq(CommandContext ctx, string output, string proc, int num1, string which, int num2, string then, string conc,[RemainingText] string concresult)
+        {
+            if (output == "outputon") await ctx.RespondAsync("Bot: Found parameters");
+            
+            if (proc == "if" && then == "then")
+            {
+                if (output == "outputon") await ctx.RespondAsync("Bot: If then statement defined");                
+                switch (which)
+                {
+                    case ">":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Greater than defined");                  
+                        if (num1 > num2)
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is true");                          
+                            switch (conc)
+                            {
+                                case "respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Response defined");                                 
+                                    await ctx.RespondAsync(concresult);
+                                    break;
+                                case "!respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Ended with order not to respond");                                   
+                                    break;
+                                default:
+                                    await ctx.RespondAsync("BotError: Then statement does not exist");
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is not true");                           
+                        }
+                        break;
+
+                    case "<":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Less than defined");
+                        
+                        if (num1 < num2)
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is true");                       
+                            switch (conc)
+                            {
+                                case "respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Response identified");                                  
+                                    await ctx.RespondAsync(concresult);
+                                    break;
+                                case "!respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Ended with order not to respond");                                  
+                                    break;
+                                default:
+                                    await ctx.RespondAsync("BotError: Then statement does not exist");
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is not true");                           
+                        }
+                        break;
+
+                    case "<=":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Less than or equal to defined");                        
+                        if (num1 <= num2)
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is true");                           
+                            switch (conc)
+                            {
+                                case "respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Response identified");
+                                    await ctx.RespondAsync(concresult);
+                                    break;
+                                case "!respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Ended with order not to respond");
+                                    break;
+                                default:
+                                    await ctx.RespondAsync("BotError: Then statement does not exist");
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is not true");                           
+                        }
+                        break;
+
+                    case ">=":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Greater than or equal to defined");                       
+                        if (num1 >= num2)
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is true");
+                            switch (conc)
+                            {
+                                case "respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Response identified");
+                                    await ctx.RespondAsync(concresult);
+                                    break;
+                                case "!respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Ended with order not to respond");                                  
+                                    break;
+                                default:
+                                    await ctx.RespondAsync("BotError: Then statement does not exist");
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is not true");                           
+                        }
+                        break;
+
+                    case "=":
+                        if (output == "outputon") await ctx.RespondAsync("Bot: Less than defined");
+                        if (num1 == num2)
+                        {
+                            if (output == "outputon") await ctx.RespondAsync("Bot: Statement is true");                         
+                            switch (conc)
+                            {
+                                case "respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Response identified");                                 
+                                    await ctx.RespondAsync(concresult);
+                                    break;
+                                case "!respond":
+                                    if (output == "outputon") await ctx.RespondAsync("Bot: Ended with order not to respond");
+                                    break;
+                                default:
+                                    await ctx.RespondAsync("BotError: Then statement does not exist");
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                           if (output == "outputon") await ctx.RespondAsync("Bot: Statement is not true");                           
+                        }
+                        break;
+                }
+            }
+            else
+            {
+             await ctx.RespondAsync("BotError: Beginning statement does not exist");                
+            }
+        }
+        [Command("program"), Description("Program the bot at a low level using variables.")]
+        public async Task Prgrmvar(CommandContext ctx)
+        {
+            await ctx.RespondAsync("Initializing programming environment");
+            ctx.Client.MessageCreated += async (e, s) =>
+            {
+                if (s.Message.Channel.Guild.Equals(ctx.Guild))
+                {
+                    var input = s.Message.Content;
+                    var var = input.StartsWith("var");
+                    switch (input)
+                    {
+                        case string n when (var):
+                            var split1 = input.Split(" ");
+                            var variablename = split1[1];
+                            var split2 = variablename.Split(" ");
+                            await ctx.RespondAsync($"Variable {variablename} selected");
+                            var result = await ctx.Message.GetNextMessageAsync(m =>
+                            {
+                                var varnextmsg = m.Content.ToLower();
+
+                                var varnextmsginteq = varnextmsg.StartsWith("eq");
+                                switch (varnextmsg)
+                                {
+                                    case string n when (varnextmsginteq):
+                                        var split1 = varnextmsg.Split(" ");
+                                        var operatoreq = split1[1];
+                                        m.Channel.SendMessageAsync(operatoreq);
+                                        break;
+                                }
+                                return varnextmsginteq;
+                            });
+                            break;
+                    }
+                }
+            };
+
         }
     }
 }
