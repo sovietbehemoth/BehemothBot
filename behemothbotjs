@@ -3,6 +3,7 @@ const { prefix, token } = require('./config.json');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const request = require('request');
+const { title } = require('process');
 
 const client = new Discord.Client();
 
@@ -21,43 +22,148 @@ client.on('message', message => {
 		message.channel.send('pong')
 	}
 	else if (command === 'calljs') {
-		message.channel.send('Discord.js and BehemothBot.js and config.json are all up and working')
+		message.channel.send('BehemothBot.js is active')
+	}
+	else if (command === 'covid') {
+		const getCovid = async () => {
+			try {
+				const { data } = await axios.get(
+					'https://covidstatistics.org/'
+				);
+				const $ = cheerio.load(data);
+
+				const covidStats = $('h2.card-text').text()
+				message.channel.send(covidStats + 'dydtywguw')
+			} catch (error) {
+				console.log(error)
+				message.channel.send(error)
+            }
+		}
+		getCovid()
+    }
+	else if (command === 'number') {
+		const number = args[0]
+		const getNumber = async () => {
+			try {
+				const { data } = await axios.get(
+					'https://www.calculatorsoup.com/calculators/conversions/numberstowords.php?number=' + number + '&format=words&letter_case=lowercase&action=solve'
+				);
+				const $ = cheerio.load(data);
+
+				const getAnswer = $('div.still').text()
+				const Embed = new Discord.MessageEmbed()
+					.setColor('#0099ff')
+					.setTitle(number)
+					.setDescription(getAnswer)
+					.setTimestamp()
+					.setFooter('BehemothBot');
+				message.channel.send(Embed);
+			} catch (error) {
+				console.log(error)
+				message.channel.send(error)
+            }
+		}
+		getNumber()
+    }
+	else if (command === 'check') {
+		message.channel.send('If you are only seeing this message then BehemothBot is partially down (C# Portion). If you are only seeing this then most commands will not work because BehemothBot is mostly built upon a D# client.')
+    }
+	else if (command === 'reddit') {
+		subreddit = args[0]
+		age = args[1]
+		const getPost = async () => {
+			try {
+				const { data } = await axios.get(
+					'https://old.reddit.com/r/' + subreddit + '/' + age + '/'
+				);
+				const $ = cheerio.load(data);
+
+				const a = $("img").attr("href")
+				const img = $('img').attr("src")
+				href = $('div > p.title > a').attr("href");
+
+				var imglink = 'http://old.reddit.com' + href;
+				try {
+					const { data } = await axios.get(
+						imglink
+					);
+
+					const $ = cheerio.load(data)
+					const imgLarge = $('img.preview').attr("src")
+
+					const Embed = new Discord.MessageEmbed()
+						.setColor('#0099ff')
+						.setTitle(`Reddit /r/${subreddit}`)
+						.setDescription(imglink)
+						.setImage(imgLarge)
+						.setTimestamp()
+						.setFooter('BehemothBot');
+					message.channel.send(Embed);
+				} catch (error) {
+					console.log(error)
+					message.channel.send('This post could not be found, this means the post could be a link from another site' + error)
+				}
+			} catch (error) {
+				console.log(error)
+				message.channel.send('This subreddit could not be found, make sure it was typed correctly and that the subreddit exists' + error)
+			}
+		}
+		getPost()
 	}
 	else if (command === 'meme') {
-		const getPostTitles = async () => {
+		const getPost = async () => {
 			try {
 				const { data } = await axios.get(
 					'https://old.reddit.com/r/dankmemes/new/'
 				);
 				const $ = cheerio.load(data);
-				const postTitles = [];
-
-				$('div > p.title > a').each((_idx, el) => {
-					const postTitle = $(el).text()
-					postTitles.push(postTitle)
-				});
 
 				const a = $("img").attr("href")
 				const img = $('img').attr("src")
-				const href = $('div > p.title > a').attr("href")
-				const imglink = 'https://www.reddit.com' + href
+				href = $('div > p.title > a').attr("href");
 
-				const Embed = new Discord.MessageEmbed()
-					.setColor('#0099ff')
-					.setTitle('Meme')
-					.setDescription(imglink)
-					.setImage('http:' + img)
-					.setTimestamp()
-					.setFooter('BehemothBot');
-				message.channel.send(Embed);
-				return postTitles;
+				var imglink = 'http://old.reddit.com' + href;
+				try {
+					const { data } = await axios.get(
+						imglink
+					);
+
+					const $ = cheerio.load(data)
+					const imgLarge = $('img.preview').attr("src")
+
+					const Embed = new Discord.MessageEmbed()
+						.setColor('#0099ff')
+						.setTitle('Meme')
+						.setDescription(imglink)
+						.setImage(imgLarge)
+						.setTimestamp()
+						.setFooter('BehemothBot');
+					message.channel.send(Embed);
+				} catch (error) {
+					console.log(error)
+				}
+
 			} catch (error) {
-				throw error;
+				console.log(error);
 			}
 		};
-		getPostTitles()
-			.then((postTitles) => console.log(postTitles));
-		// other commands...
-	};
+		getPost()
+	}
+	else if (command === 'yt') {
+		const getVid = async () => {
+				const search = args[0]
+				const url = 'https://www.youtube.com/results?search_query=' + search + '&sp=EgIQAg%253D%253D'
+			request({
+				method: 'GET',
+				url: url
+			}, (err, res, body) => {
+					if (err) return message.channel.send(err);
+				const $ = cheerio.load(body)
+					const channellink = $('ytd-channel-renderer.style-scope:nth-child(1) > div:nth-child(2) > div:nth-child(2) > a:nth-child(1)').attr("href")
+				message.channel.send(`Channel ${channellink}`)
+			});
+		};
+		getVid()
+	}
 })
 client.login(token)
