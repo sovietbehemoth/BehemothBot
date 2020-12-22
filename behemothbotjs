@@ -24,23 +24,82 @@ client.on('message', message => {
 	else if (command === 'calljs') {
 		message.channel.send('BehemothBot.js is active')
 	}
+    
+	else if (command === 'weather') {
+		const country = args[0]
+		const state = args[1]
+		const city = args[2]
+
+		const getWeather = async () => {
+			try {
+				const { data } = await axios.get(
+					'https://www.wunderground.com/weather/' + country + '/' + state + '/' + city + '/'
+				);
+				const $ = cheerio.load(data)
+
+				const weather = $('span.test-true.wu-unit.wu-unit-temperature.is-degree-visible.ng-star-inserted > span.wu-value.wu-value-to').text()
+				const weatherResults = weather.charAt(2) + weather.charAt(1)
+				const Embed = new Discord.MessageEmbed()
+					.setColor('#0099ff')
+					.setTitle(`Weather for ${city} `)
+					.setDescription(`${weatherResults}`)
+					.setTimestamp()
+					.setFooter('BehemothBot');
+				message.channel.send(Embed);
+			} catch (error) {
+				console.log(error)
+				message.channel.send(error)
+            }
+		}
+		getWeather()
+    }
 	else if (command === 'covid') {
 		const getCovid = async () => {
 			try {
 				const { data } = await axios.get(
-					'https://covidstatistics.org/'
+					'https://covidusa.net/'
 				);
 				const $ = cheerio.load(data);
 
-				const covidStats = $('h2.card-text').text()
-				message.channel.send(covidStats + 'dydtywguw')
+				const covidStats = $('div.stat.py-4 > div.stat-value.display-4.text-warning').text()
+				const Embed = new Discord.MessageEmbed()
+					.setColor('#0099ff')
+					.setTitle('Covid-19 Statistics - US')
+					.setDescription(`(1st is current, 2nd is 7 day projection, 3rd is 14 day projection, and 4th is 30 day projection) \n${covidStats}`)
+					.setTimestamp()
+					.setFooter('BehemothBot');
+				message.channel.send(Embed);
 			} catch (error) {
 				console.log(error)
 				message.channel.send(error)
             }
 		}
 		getCovid()
-    }
+	}
+	else if (command === 'wikipedia') {
+		const getCovid = async () => {
+			try {
+				const { data } = await axios.get(
+					'https://en.wikipedia.org/wiki/Special:Random'
+				);
+				const $ = cheerio.load(data);
+
+				const wikipediatitle = $('h1.firstHeading').text()
+				const wikipediacontents = $('p').text()
+				const Embed = new Discord.MessageEmbed()
+					.setColor('#0099ff')
+					.setTitle(wikipediatitle)
+					.setDescription(wikipediacontents.substring(0, 500))
+					.setTimestamp()
+					.setFooter('BehemothBot');
+				message.channel.send(Embed);
+			} catch (error) {
+				console.log(error)
+				message.channel.send(error)
+			}
+		}
+		getCovid()
+	}
 	else if (command === 'number') {
 		const number = args[0]
 		const getNumber = async () => {
@@ -149,21 +208,8 @@ client.on('message', message => {
 		};
 		getPost()
 	}
-	else if (command === 'yt') {
-		const getVid = async () => {
-				const search = args[0]
-				const url = 'https://www.youtube.com/results?search_query=' + search + '&sp=EgIQAg%253D%253D'
-			request({
-				method: 'GET',
-				url: url
-			}, (err, res, body) => {
-					if (err) return message.channel.send(err);
-				const $ = cheerio.load(body)
-					const channellink = $('ytd-channel-renderer.style-scope:nth-child(1) > div:nth-child(2) > div:nth-child(2) > a:nth-child(1)').attr("href")
-				message.channel.send(`Channel ${channellink}`)
-			});
-		};
-		getVid()
+	else if (command === 'ig') {
+		
 	}
 })
 client.login(token)
