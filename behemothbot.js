@@ -4,26 +4,31 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const request = require('request');
 const { title } = require('process');
-
+//initialize client
 const client = new Discord.Client();
 
 client.once('ready', () => {
 	console.log('Ready! BehemothBot is online.');
 });
-
+//message handling
 client.on('message', message => {
+	//logs all messages
 	console.log(message.content);
 	if (!message.content.startsWith(prefix) || message.author.bot) return;
-
+//handle the prefix
 	const args = message.content.slice(prefix.length).trim().split(/ +/);
 	const command = args.shift().toLowerCase();
-
+//simple ping command
 	if (command === 'ping') {
 		message.channel.send('pong')
 	}
+//simple call to check if javascript client is online
 	else if (command === 'calljs') {
 		message.channel.send('BehemothBot.js is active')
 	}
+	/*grabs weather for a location, parses from weather website. All arguments must be abbreviated except for city
+	Syntax: -/weather [country] [state/province] [city] */
+	
 	else if (command === 'weather') {
 		const country = args[0]
 		const state = args[1]
@@ -52,6 +57,7 @@ client.on('message', message => {
 		}
 		getWeather()
 	}
+	//Parses COVID statistics, no arguments
 	else if (command === 'covid') {
 		const getCovid = async () => {
 			try {
@@ -75,6 +81,7 @@ client.on('message', message => {
 		}
 		getCovid()
 	}
+	//Parses random wikipedia article, no arguments
 	else if (command === 'wikipedia') {
 		const getCovid = async () => {
 			try {
@@ -99,6 +106,7 @@ client.on('message', message => {
 		}
 		getCovid()
 	}
+	//grabs the word form of any number. Syntax: -/number [number]
 	else if (command === 'number') {
 		const number = args[0]
 		const getNumber = async () => {
@@ -123,9 +131,12 @@ client.on('message', message => {
 		}
 		getNumber()
 	}
+//another way to check if js client is online
 	else if (command === 'check') {
 		message.channel.send('If you are only seeing this message then BehemothBot is partially down (C# Portion). If you are only seeing this then most commands will not work because BehemothBot is mostly built upon a D# client.')
 	}
+	/*parses post from reddit. Syntax: -/reddit [subreddit] [age (ex: new, old, top, hot). only image posts return
+	anything. GIFS, videos, and linked posts from other websites also not work*/
 	else if (command === 'reddit') {
 		subreddit = args[0]
 		age = args[1]
@@ -169,6 +180,7 @@ client.on('message', message => {
 		}
 		getPost()
 	}
+	//Specific form of reddit command with no arguments, gets post from /r/dankmemes
 	else if (command === 'meme') {
 		const getPost = async () => {
 			try {
@@ -209,6 +221,7 @@ client.on('message', message => {
 		};
 		getPost()
 	}
+	//make an announcement, customize the embed
 	else if (command === 'ann') {
 		const announcement = new Discord.MessageEmbed()
 			.setColor('#0099ff')
@@ -219,6 +232,7 @@ client.on('message', message => {
 			.setFooter('BehemothBot');
 		message.channel.send(announcement)
 	}
+	//parses last.fm data for a user, many arguments
 	else if (command === 'fm') {
 		const spotifyAccount = args[0]
 		switch (args[1]) {
