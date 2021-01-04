@@ -20,7 +20,7 @@ namespace DiscordBotAttempt3
         {
             MainAsync(args).ConfigureAwait(false).GetAwaiter().GetResult();
         }
-
+//Configure client
         static async Task MainAsync(string[] args)
         {
             discord = new DiscordClient(new DiscordConfiguration
@@ -29,19 +29,23 @@ namespace DiscordBotAttempt3
                 TokenType = TokenType.Bot,
                 LogTimestampFormat = "MMM dd yyyy - hh:mm:ss tt",
             });
+            //Configure interactivity
             discord.UseInteractivity(new InteractivityConfiguration()
             {
                 PollBehaviour = PollBehaviour.KeepEmojis,
                 Timeout = TimeSpan.FromSeconds(30)
             });
+            //define prefix
             var commands = discord.UseCommandsNext(new CommandsNextConfiguration()
             {
                 StringPrefixes = new[] { "-/" }
             });
+            //messages a new user who joins the server
             discord.GuildMemberAdded += async (s, e) =>
             {
                 await e.Member.SendMessageAsync($"Welcome to {e.Guild.Name}");
             };
+            //error handling
             discord.SocketErrored += async (s, e) =>
             {
                 await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Hey rock man, somethings wrong with me");
@@ -55,12 +59,13 @@ namespace DiscordBotAttempt3
                     $"Handling: {e.Handled}" +
                     $"Info: {e.Json}");
             };
+            //alert when client is resumed
             discord.Resumed += async (s, e) =>
             {
                 await discord.GetChannelAsync(768501915104968755).Result.SendMessageAsync("Resumed client" +
                     $"Handling: {e.Handled}");
             };
-            
+           //command handling 
             commands.RegisterCommands<MyCommands>();
 
             await discord.ConnectAsync();
@@ -76,6 +81,7 @@ namespace DiscordBotAttempt3
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Ban(CommandContext ctx, DiscordMember member, string reason)
         {
+        //try catch not necessary but it helps for errors
             try
             {
                 await ctx.Guild.BanMemberAsync(member);
@@ -117,7 +123,7 @@ namespace DiscordBotAttempt3
                 await ctx.RespondAsync("Error: Could not kick member");
             }
         }
-
+//Will ping the JavaScript portion as well
         [Command("ping"), Description("Checks the latency of the client to the server, check if BehemothBot is online")]
         public async Task Ping(CommandContext ctx)
         {
@@ -126,8 +132,7 @@ namespace DiscordBotAttempt3
                 Title = "BehemothBot",
                 Description = $"{ctx.Client.Ping.ToString()} MS",
             };
-            await ctx.RespondAsync(embed: embed);
-            
+            await ctx.RespondAsync(embed: embed);          
         }
 
         [Command("serverinfo"), Description("Provides basic information about the discord server")]
@@ -147,6 +152,7 @@ namespace DiscordBotAttempt3
         public async Task Userinfo(CommandContext ctx, DiscordMember member)
         {
             var user = member.Equals(ctx.User);
+            //switch not necessary but useful for context
             switch (user)
             {
                 case true:
@@ -171,7 +177,7 @@ namespace DiscordBotAttempt3
                     break;
             }
         }
-
+//userinfo2 is used for user IDs
         [Command("userinfo2"), Description("Provides basic information about the discord user, this version of the command requires the users ID.")]
         public async Task Userinfo2(CommandContext ctx, long uid)
         {
@@ -219,6 +225,7 @@ namespace DiscordBotAttempt3
                 };
                 await ctx.RespondAsync(embed: embed);
             }
+            //error handling
             else if (x == y)
             {
                 await ctx.RespondAsync("Error: The two numbers cannot be equal");
@@ -287,7 +294,7 @@ namespace DiscordBotAttempt3
             var cpwd3sp2 = pwd3[new Random().Next(0, pwd3.Length)];
             var cpwd3sp3 = pwd3[new Random().Next(0, pwd3.Length)];
 
-            //generate random password
+            //generate random string
             var pwda = pwd1cap + pwd2int + pwd1low.ToLower() + pwd3sp;
             var pwdb = pwd1low2.ToLower() + pwd3sp2 + pwd1cap2 + pwd2int2;
             var pwdc = pwd2int3 + pwd1cap3 + pwd3sp3 + pwd1low3.ToLower();
@@ -308,7 +315,7 @@ namespace DiscordBotAttempt3
             var pwdrand3 = cpwdrand[new Random().Next(0, cpwdrand.Length)];
             var pwd = pwdrand1 + pwdrand2 + pwdrand3;
 
-            //return password
+            //return string
             var embed = new DiscordEmbedBuilder
             {
                 Title = "Random String",
@@ -378,7 +385,7 @@ namespace DiscordBotAttempt3
                     break;
             }            
         }
-
+//NOTICE: creates event only reset by restarting client
         [Command("autoresponse"), Description("Automatically sends response to specified message. Syntax: -/autoresponse (word to respond to) (automatic response)")]
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Autoresponse(CommandContext ctx, string target, [RemainingText] string autores)
@@ -397,7 +404,7 @@ namespace DiscordBotAttempt3
             };
         }
 
-
+//NOTICE: creates event only reset by restarting client
         [Command("blacklist"), Description("Blacklist specified word, if word is entered in chat it will automatically get deleted. If blacklist level is high any words containing the blacklisted word will get deleted. Low level will only delete messages specifically containing that word. Syntax: -/blacklist (word) (level).)")]
         [RequirePermissions(Permissions.BanMembers)]
         public async Task Blacklist(CommandContext ctx, string black, string level)
@@ -431,19 +438,12 @@ namespace DiscordBotAttempt3
                     break;
             }
         }      
-
-        [Command("r"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
+//Command used for debugging
+        [Command("r"), Description("Send a message as the bot"), RequireOwner]
         [Hidden]
         public async Task Reminder(CommandContext ctx,[RemainingText]string sub)
         {
             await ctx.Client.GetChannelAsync(768501915104968755).Result.SendMessageAsync(sub);
-            await ctx.RespondAsync("Respond with *confirm* to continue.");
-            var result = await ctx.Message.GetNextMessageAsync(m =>
-            {
-                return m.Content.ToLower() == "confirm";
-            });
-
-            if (!result.TimedOut) await ctx.RespondAsync("Action confirmed.");
         }
 
         [Command("snooze"), Description("Sets a 5 minute timer, used in conjunction with the alarm or timer command")]
@@ -537,6 +537,7 @@ namespace DiscordBotAttempt3
                         break;
                 }
             }
+            //error handling
             else if (amt <= 0)
             {
                 await ctx.RespondAsync("Error: Number cannot be negative");
@@ -554,7 +555,7 @@ namespace DiscordBotAttempt3
         {
             await ctx.RespondAsync(item.GetHashCode().ToString());
         }
-
+//handles math regarding one number
         [Command("math2"), Description("Calculates more complicated math. Syntax: -/math2 (operation: Square Root(sqr), Absolute Value(abs), Cosine(cos)) (Number)")]
         public async Task Math2(CommandContext ctx, string op, int x)
         {
@@ -603,7 +604,7 @@ namespace DiscordBotAttempt3
             var cmds = ctx.CommandsNext;
             await ctx.RespondAsync("Error: This command no longer works");
         }
-
+//used for debugging
         [Command("callsharp"), Description("Executes commands as specified user, (-/dis (user) (command)"), RequireOwner]
         [Hidden]
         public async Task Call(CommandContext ctx)
@@ -622,11 +623,13 @@ namespace DiscordBotAttempt3
             };
             await ctx.RespondAsync(embed: embed3);
         }
-
+//used for user ID input, task delays to prevent spam
         [Command("summon2"), Description("Sends a message to a specified user. Syntax: -/summon (USERID) (Method to summon (msg = bot will DM target), (mnt = bot will mention target in text channel)). Command has a delay of 10 seconds to prevent spam.")]
         public async Task Summon2(CommandContext ctx, long uid, string method)
         {
+        //get user id
             var member = ctx.Guild.GetMemberAsync(Convert.ToUInt64(uid)).Result;
+            //Make sure user isnt a bot and isnt the user who triggered command
             if (member != ctx.User && !member.IsBot)
             {
                 switch (method)
@@ -677,29 +680,31 @@ namespace DiscordBotAttempt3
                 await Task.Delay(3000);
             }
         }
-
+//Does not always work, needs more development
         [Command("alarm"), Description("Sets an alarm, only uses military time (24 hour format) Syntax: -/alarm (time), ex: -/alarm (23:43) will ping you at 11:43 PM")]
         public async Task Alarm(CommandContext ctx, string time, [RemainingText] string reason)
         {
+        //handles the time input
             var val = time.Split(":");
             int hour = Convert.ToInt32(val[0]);
             var minute = Convert.ToInt32(val[1]);
-
+//make sure time makes sense
             if (hour >= 0 && hour <= 23 && minute >= 0 && minute < 60)
             {
+            //gets current time
                 var chour = DateTime.Now.Hour;
                 var cminute = DateTime.Now.Minute;
-
                 if (minute > cminute)
                 {
+                //calculate time to wait
                     var waithourms = hour -= chour;
                     var waitminutems = minute -= cminute;
                     await ctx.RespondAsync($"Alarm set, I will ping you in {waithourms} hours and {waitminutems} minutes at {time}");
-
+//convert time to milliseconds
                     var waithour = waithourms * 3600000;
                     var waitminute = waitminutems * 60000;
                     await Task.Delay(waithour + waitminute);
-
+//when alarm sounds
                     await ctx.RespondAsync(ctx.Member.Mention);
                     var embed = new DiscordEmbedBuilder
                     {
@@ -729,31 +734,46 @@ namespace DiscordBotAttempt3
                     await ctx.RespondAsync(embed: embed2);
                 }
             }
+            //error handling
             else
             {
                 await ctx.RespondAsync("Error: You either put a time higher than 23 or a negative time");
             }
         }
 
+
+/* These remaining commands deal with the BehemothSharpInterpreter, an interpreter for my custom discord programming language. Read about how 
+the language works before modifying the interpreter.
+"outputon" Refers to whether the bot will output which lines of code it is running through, this is very usefull for debugging
+and catching errors to find where exactly went wrong.
+*/
+
+//deals with arguments relating to math operations
         [Command("programop"), Description("Program the bot at a low level using operations.")]
         public async Task Prgrmop(CommandContext ctx, string output, string proc, int num1, string op, int num2, string thus, int answer, string then, string conc, [RemainingText] string concresult)
         {
             if (output == "outputon") await ctx.RespondAsync("Bot: Found parameters");          
+            //identifies if then statement
             if (proc == "if" && then == "then")
             {
                 if (output == "outputon") await ctx.RespondAsync("Bot: If then statement identified");
+                //switches which operation is used
                 switch (op)
                 {
                     case "+":
                         if (output == "outputon") await ctx.RespondAsync("Bot: Operation identified");
+                        //perform operation
                         var sum = num1 + num2;
+                        //checks if statement is true and the state of the equal sign
                         if (sum == answer && thus == "=")
                         {
                             if (output == "outputon") await ctx.RespondAsync("Bot: Statement is true");
+                            //defines what to do next
                             switch (conc)
                             {
                                 case "respond":
                                     if (output == "outputon") await ctx.RespondAsync("Bot: Formulating response");
+                                    //switches the equals sign
                                     switch (thus)
                                     {
                                         case "=":
@@ -777,6 +797,7 @@ namespace DiscordBotAttempt3
                         {
                             await ctx.RespondAsync("Bot: This statement is not true");
                         }
+                        //if equals sign is switched
                         else if (thus == "!=")
                         {
                             if (output == "outputon") await ctx.RespondAsync("Bot: Condition identified");
@@ -835,6 +856,7 @@ namespace DiscordBotAttempt3
                         {
                             await ctx.RespondAsync("Bot: This statement is not true");
                         }
+                        //if equals sign is inverted
                         else if (thus == "!=")
                         {
                             if (output == "outputon") await ctx.RespondAsync("Bot: Condition identified");
@@ -866,7 +888,7 @@ namespace DiscordBotAttempt3
             }
             else if (output == "outputon") await ctx.RespondAsync("BotError: Beginning statement does not exist");
         }
-
+//deals with arguments regarding data types
         [Command("programvar")]
         public async Task Prgrminvar(CommandContext ctx, string output, string datatype, string dataname, string equals, string datatype2, [RemainingText]string dataname2)
         {
