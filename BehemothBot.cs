@@ -1156,6 +1156,111 @@ and catching errors to find where exactly went wrong.
              await ctx.RespondAsync("BotError: Beginning statement does not exist");                
             }
         }
+        [Command("convert"), Description("Convert units to each other, unfinished. First value uses abbreviation, second does not. Syntax: -/convert (value)(abbreviated unit) to (other unit).")]
+        public async Task Client(CommandContext ctx, string val1, string to, string val2)
+        {
+           if (to == "to")
+            {
+                switch (val1)
+                {
+                    case var feetconversions when val1.EndsWith("ft"):
+                        var ftval = Convert.ToInt32(val1.Split("ft")[0]);
+                        switch (val2)
+                        {
+                            case "inches":
+                                var ft2in = 12 * ftval;
+                                await ctx.RespondAsync(ft2in.ToString());
+                                break;
+                            case "yards":
+                                var ft2yd = ftval / 3;
+                                await ctx.RespondAsync(ft2yd.ToString());
+                                break;
+                            case "miles":
+                                var ft2mile = ftval / 5280;
+                                await ctx.RespondAsync(ft2mile.ToString());
+                                break;
+                            case "kilometers":
+                                var ft2km = ftval / 3280.84;
+                                await ctx.RespondAsync(ft2km.ToString());
+                                break;
+                            case "meters":
+                                var ft2m = ftval / 3.28084;
+                                await ctx.RespondAsync(ft2m.ToString());
+                                break;
+                            case "centimeters":
+                                var ft2cm = ftval * 30.48;
+                                await ctx.RespondAsync(ft2cm.ToString());
+                                break;
+                            case "millimeters":
+                                var ft2mm = ftval * 304.8;
+                                await ctx.RespondAsync(ft2mm.ToString());
+                                break;
+                            default:
+                                await ctx.RespondAsync("Error: Invalid unit of measurement");
+                                break;
+                        }
+                        break;
+                    case var mileconversions when val1.EndsWith("mi"):
+                        var mival = Convert.ToInt32(val1.Split("mi")[0]);
+                        switch (val2)
+                        {
+                            case "kilometers":
+                                var mi2km = mival / 1.609344;
+                                await ctx.RespondAsync(mi2km.ToString());
+                                break;
+                            case "feet":
+                                var mi2ft = mival * 5280;
+                                await ctx.RespondAsync(mi2ft.ToString());
+                                break;
+                            case "meters":
+                                var mi2m = mival * 1609.344;
+                                await ctx.RespondAsync(mi2m.ToString());
+                                break;
+                            default:
+                                await ctx.RespondAsync("Error: Invalid unit of measurement");
+                                break;
+                        }
+                        break;
+                    case var meterconversions when val1.EndsWith("m"):
+                        var mval = Convert.ToInt32(val1.Split("m")[0]);
+                        switch (val2)
+                        {
+                            case "kilometers":
+                                var m2km = mval / 1000;
+                                await ctx.RespondAsync(m2km.ToString());
+                                break;
+                            case "feet":
+                                var m2ft = mval * 3.28084;
+                                await ctx.RespondAsync(m2ft.ToString());
+                                break;
+                            case "inches":
+                                var m2in = mval * 39.37008;
+                                await ctx.RespondAsync(m2in.ToString());
+                                break;
+                            case "miles":
+                                var m2mi = mval / 1609.344;
+                                await ctx.RespondAsync(m2mi.ToString());
+                                break;
+                            case "yards":
+                                var m2yd = mval / 1.093613;
+                                await ctx.RespondAsync(m2yd.ToString());
+                                break;
+                            case "centimeters":
+                                var m2cm = mval * 100;
+                                await ctx.RespondAsync(m2cm.ToString());
+                                break;
+                            case "millimeters":
+                                var m2mm = mval * 1000;
+                                await ctx.RespondAsync(m2mm.ToString());
+                                break;
+                            default:
+                                await ctx.RespondAsync("Error: Invalid unit of measurement");
+                                break;
+                        }
+                        break;
+                }
+            } 
+        }
          [Command("proga2")]
         public async Task Program1(CommandContext ctx, string output, string argument, [RemainingText]string argument2)
         {
