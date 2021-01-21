@@ -1156,6 +1156,107 @@ and catching errors to find where exactly went wrong.
              await ctx.RespondAsync("BotError: Beginning statement does not exist");                
             }
         }
+         [Command("proga2")]
+        public async Task Program1(CommandContext ctx, string output, string argument, [RemainingText]string argument2)
+        {
+            if (output == "1") await ctx.RespondAsync("Bot: Parameters found");
+            switch (argument)
+            {
+                case "print":
+                    if (output == "1") await ctx.RespondAsync("Bot: Print argument identified");
+                    if (argument2.StartsWith("'") && argument2.EndsWith("'"))
+                    {
+                        var argument2count = argument2.Length;
+                        if (argument2count != 0)
+                        {
+                            var realargcount2 = argument2count - 2;
+                            var printargument = argument2.Substring(1, realargcount2);
+                            if (printargument != "@everyone") await ctx.RespondAsync(printargument);
+                        }
+                        else await ctx.RespondAsync("BehemothSharpInterpreter: Cannot print empty string");
+                    }
+                    else if (!argument2.StartsWith("'") && !argument2.EndsWith("'"))
+                    {
+                        switch (argument2)
+                        {
+                            case var a when argument2.StartsWith("member"):
+                                var secondArg = argument2.Split(".")[1];
+                                switch (secondArg)
+                                {
+                                    case var b when secondArg.StartsWith("mention"):
+                                        var thirdArg = secondArg.Split("(")[1];
+                                        switch (thirdArg)
+                                        {
+                                            case var c when thirdArg.StartsWith("self") && thirdArg.EndsWith(");"):
+                                                await ctx.RespondAsync(ctx.User.Mention);
+                                                break;
+                                            case var d when thirdArg.StartsWith("@") && thirdArg.EndsWith(");"):
+                                                var splituponID = thirdArg.Split("@")[1];
+                                                var splituponIDpar = splituponID.Split(")")[0];
+                                                try
+                                                {
+                                                    var memberPrintMention = ctx.Guild.GetMemberAsync(Convert.ToUInt64(splituponIDpar)).Result;
+                                                    await ctx.RespondAsync(memberPrintMention.Mention);
+                                                }
+                                                catch
+                                                {
+                                                    await ctx.RespondAsync("BehemothSharpInterpreter: Member not found");
+                                                }
+                                                break;
+                                            default:
+                                                await ctx.RespondAsync("BehemothSharpInterpreter: Argument not found // Unclosed parenthesis // Missing ;");
+                                                break;
+                                        }
+                                        break;                                
+                                }
+                                break;
+                            case var c when argument2.StartsWith("server"):
+                                var secondArg2 = argument2.Split(".")[1];
+                                switch (secondArg2)
+                                {
+                                    case var d when secondArg2.StartsWith("membercount;"):
+                                        await ctx.RespondAsync(ctx.Guild.MemberCount.ToString());
+                                        break;
+                                    default:
+                                        await ctx.RespondAsync($"BehemothBotInterpreter: '{secondArg2}' does not exist. Missing ;?");
+                                        break;
+                                    case var e when secondArg2.StartsWith("ownername;"):
+                                        await ctx.RespondAsync(ctx.Guild.Owner.Username);
+                                        break;
+                                    case var e when secondArg2.StartsWith("ownermention;"):
+                                        await ctx.RespondAsync(ctx.Guild.Owner.Mention);
+                                        break;
+                                    case var f when secondArg2.StartsWith("owner;"):
+                                        await ctx.RespondAsync("BehemothBotInterpreter: Incorrect usage of 'owner'");
+                                        break;
+                                }
+                                break;
+                            default:
+                                await ctx.RespondAsync($"BehemothBotInterpreter: '{argument2}' does not exist");
+                                break;
+                        }
+                    }
+                    break;
+                default:
+                    await ctx.RespondAsync($"BehemothSharpInterpreter: Error '{argument}' does not exist");
+                    break;
+                case "log":
+                    if (argument2.StartsWith("'") && argument2.EndsWith("'"))
+                    {
+                        var argument2count = argument2.Length;
+                        if (argument2count != 0)
+                        {
+                            var realargcount2 = argument2count - 2;
+                            var printargument = argument2.Substring(1, realargcount2);
+                            Console.WriteLine(printargument);
+                            await ctx.RespondAsync("Logged in console");
+                        }
+                        else await ctx.RespondAsync("BehemothSharpInterpreter: Cannot print empty string");
+                    }
+                    break;
+            }
+        }
+        
         [Command("program"), Description("Program the bot at a low level using variables.")]
         public async Task Prgrmvar(CommandContext ctx)
         {
