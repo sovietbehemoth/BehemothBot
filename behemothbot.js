@@ -4,31 +4,26 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const request = require('request');
 const { title } = require('process');
-//initialize client
+
 const client = new Discord.Client();
 
 client.once('ready', () => {
 	console.log('Ready! BehemothBot is online.');
 });
-//message handling
+
 client.on('message', message => {
-	//logs all messages
 	console.log(message.content);
 	if (!message.content.startsWith(prefix) || message.author.bot) return;
-//handle the prefix
+
 	const args = message.content.slice(prefix.length).trim().split(/ +/);
 	const command = args.shift().toLowerCase();
-//simple ping command
+
 	if (command === 'ping') {
 		message.channel.send('pong')
 	}
-//simple call to check if javascript client is online
 	else if (command === 'calljs') {
 		message.channel.send('BehemothBot.js is active')
 	}
-	/*grabs weather for a location, parses from weather website. All arguments must be abbreviated except for city
-	Syntax: -/weather [country] [state/province] [city] */
-	
 	else if (command === 'weather') {
 		const country = args[0]
 		const state = args[1]
@@ -57,7 +52,34 @@ client.on('message', message => {
 		}
 		getWeather()
 	}
-	//Parses COVID statistics, no arguments
+	else if (command === 'help') {
+		message.channel.send("```ping, calljs, weather, covid, wikipedia, number, reddit, meme, fm```")
+		switch (args[0]) {
+			case "weather":
+				message.channel.send("```Weather: Gets the current temperature for specified city\n-/weather\nCountry: Abbreviated name for specified country\nState/Province: Abbreviated name for specified state or province\nCity: NOT abbreviated name of specified city```");
+				break;
+			case "covid":
+				message.channel.send("```Covid: Gets current covid cases in totals (no arguments)```");
+				break;
+			case "wikipedia":
+				message.channel.send("```Wikipedia: Gets the first part of a random wikipedia article (no arguments)```");
+				break;
+			case "number":
+				message.channel.send("```Number: Calculates the word form of any number\n-/number\nNumber: Specified number```");
+				break;
+			case "reddit":
+				message.channel.send("```Reddit: Gets posts from reddit\nSubreddit: Specified subreddit, will not return anything if sub is banned\nStatus: Control whether to look for new, hot, or top posts```");
+				break;
+			case "meme":
+				message.channel.send("```Meme: Gets a meme from /r/dankmemes, always set to new (no arguments)```");
+				break;
+			default:
+				message.channel.send("Error: Argument not found")
+				break;
+			case "fm":
+				message.channel.send("```Fm: Gets information from last.fm (NOT USING API, THIS INFO IS WEB SCRAPED)\nAccount: Your lastfm username (required)\nFROM HERE ARE ARGUMENTS THAT WORK ALONE\nRecent): gets your most recent song played\nRecentAll: gets your 3 most recent songs\n\nPlays:\nAll: gets total spotify plays\nArtist: Total plays with certain artist, then use the artists name as the next argument. WHEN ARTISTS HAVE SPACES THEY MUST BE SUBSTITUTED WITH '_' OR '+'\n\nArtistCount: Displays total artists played\nSince: gets date you started using lastfm\n\nArtist: specifies artist subcategory\nTop: specifies top subcategory\nSongs: Gets top 5 most played songs by specified artist\nAlbums: Gets top 5 most played albums by specified artist\nArtistSpecified: Final argument is artist specified IF ARTIST HAS MORE THAN ONE NAME SPACES MUST BE SUBSTITUTED WITH EITHER '_' OR '+'```");
+        }
+    }
 	else if (command === 'covid') {
 		const getCovid = async () => {
 			try {
@@ -81,7 +103,6 @@ client.on('message', message => {
 		}
 		getCovid()
 	}
-	//Parses random wikipedia article, no arguments
 	else if (command === 'wikipedia') {
 		const getCovid = async () => {
 			try {
@@ -106,7 +127,6 @@ client.on('message', message => {
 		}
 		getCovid()
 	}
-	//grabs the word form of any number. Syntax: -/number [number]
 	else if (command === 'number') {
 		const number = args[0]
 		const getNumber = async () => {
@@ -131,12 +151,9 @@ client.on('message', message => {
 		}
 		getNumber()
 	}
-//another way to check if js client is online
 	else if (command === 'check') {
 		message.channel.send('If you are only seeing this message then BehemothBot is partially down (C# Portion). If you are only seeing this then most commands will not work because BehemothBot is mostly built upon a D# client.')
 	}
-	/*parses post from reddit. Syntax: -/reddit [subreddit] [age (ex: new, old, top, hot). only image posts return
-	anything. GIFS, videos, and linked posts from other websites also not work*/
 	else if (command === 'reddit') {
 		subreddit = args[0]
 		age = args[1]
@@ -180,7 +197,6 @@ client.on('message', message => {
 		}
 		getPost()
 	}
-	//Specific form of reddit command with no arguments, gets post from /r/dankmemes
 	else if (command === 'meme') {
 		const getPost = async () => {
 			try {
@@ -221,7 +237,6 @@ client.on('message', message => {
 		};
 		getPost()
 	}
-	//make an announcement, customize the embed
 	else if (command === 'ann') {
 		const announcement = new Discord.MessageEmbed()
 			.setColor('#0099ff')
@@ -232,7 +247,6 @@ client.on('message', message => {
 			.setFooter('BehemothBot');
 		message.channel.send(announcement)
 	}
-	//parses last.fm data for a user, many arguments
 	else if (command === 'fm') {
 		const spotifyAccount = args[0]
 		switch (args[1]) {
@@ -263,6 +277,30 @@ client.on('message', message => {
 					}
 				}
 				getrecentSong()
+				break;
+			default:
+				message.channel.send("Error: Argument not found")
+				break;
+			case "recentl":
+				const getsongLyrics = async () => {
+					try {
+						const { data } = await axios.get(
+							'https://www.last.fm/user/' + spotifyAccount + '/'
+						);
+						const $ = cheerio.load(data)
+						const recentsongName = $('section > table.chartlist tr:nth-child(1) > td.chartlist-name > a').text();
+						const { data2 } = await axios.get(
+							'https://genius.com/search?q=' + recentsongName
+						);
+						const $2 = cheerio.load(data2);
+						const getSongUrl = $2('div.u-quarter_vertical_margins.u-clickable > a.mini_card').attr("href");
+						message.channel.send(getSongUrl);
+					} catch (error) {
+						console.log(error);
+						message.channel.send(error);
+					}
+				}
+				getsongLyrics();
 				break;
 			case "recentall":
 				const getrecentsongAll = async () => {
@@ -330,14 +368,16 @@ client.on('message', message => {
 						}
 						getPlays()
 						break;
+					default:
+						message.channel.send("Error: Argument not found")
+						break;
 					case "artist":
 						const getArtistPlays = async () => {
 							const artist = args[3]
-							if (args[artist, 4] != null) var url = 'https://www.last.fm/user/' + spotifyAccount + '/library/music/' + artist + '+' + args[4];
-							if (args[artist] != null) var url = 'https://www.last.fm/user/' + spotifyAccount + '/library/music/' + artist;
+		
 							try {
 								const { data } = await axios.get(
-									url
+									'https://www.last.fm/user/' + spotifyAccount + '/library/music/' + artist
 								);
 								const $ = cheerio.load(data)
 								const scrobbleartistCountSongs = $('ul.metadata-list li:nth-child(1) > p.metadata-display').text()
@@ -414,25 +454,68 @@ client.on('message', message => {
 								const gettopsongsBy = async () => {
 									try {
 										const { data } = await axios.get(
-											'https://www.last.fm/user/' + spotifyAccount + '/library/music/' + args[3]
+											'https://www.last.fm/user/' + spotifyAccount + '/library/music/' + args[4] + '/+tracks'
 										);
 										const $ = cheerio.load(data)
 										const track1 = $('table.chartlist tr:nth-child(1) > td.chartlist-name > a').text()
+										const track2 = $('table.chartlist tr:nth-child(2) > td.chartlist-name > a').text()
+										const track3 = $('table.chartlist tr:nth-child(3) > td.chartlist-name > a').text()
+										const track4 = $('table.chartlist tr:nth-child(4) > td.chartlist-name > a').text()
+										const track5 = $('table.chartlist tr:nth-child(5) > td.chartlist-name > a').text()
+
+										const artistName = $('h2.library-header-title').text()
+
 										const Embed = new Discord.MessageEmbed()
 											.setColor('#099ff')
-											.setTitle(`${spotifyAccount}`)
-											.setDescription(`${spotifyAccount} ${track1}`)
+											.setTitle(`${artistName}`)
+											.setDescription(`1. ${track1} \n 2. ${track2} \n 3. ${track3} \n 4. ${track4} \n 5. ${track5}`)
 											.setTimestamp()
 											.setFooter('BehemothBot')
 										message.channel.send(Embed)
 									} catch (error) {
 										console.log(error)
-										message.channel.send(error)
+										message.channel.send('An internal error occurred fetching artist top songs')
 									}
 								}
 								gettopsongsBy()
 								break;
+							case "albums":
+								const gettopalbumsBy = async () => {
+									try {
+										const { data } = await axios.get(
+											'https://www.last.fm/user/' + spotifyAccount + '/library/music/' + args[4] + '/+albums'
+										);
+										const $ = cheerio.load(data)
+										const track1 = $('table.chartlist tr:nth-child(1) > td.chartlist-name > a').text()
+										const track1plays = $('table.chartlist tr:nth-child(1) > span.chartlist-count-bar-value').text()
+										const track2 = $('table.chartlist tr:nth-child(2) > td.chartlist-name > a').text()
+										const track3 = $('table.chartlist tr:nth-child(3) > td.chartlist-name > a').text()
+										const track4 = $('table.chartlist tr:nth-child(4) > td.chartlist-name > a').text()
+										const track5 = $('table.chartlist tr:nth-child(5) > td.chartlist-name > a').text()
+
+										const artistName = $('h2.library-header-title').text()
+
+										const Embed = new Discord.MessageEmbed()
+											.setColor('#099ff')
+											.setTitle(`${artistName}`)
+											.setDescription(`1. ${track1} \n 2. ${track2} \n 3. ${track3} \n 4. ${track4} \n 5. ${track5}`)
+											.setTimestamp()
+											.setFooter('BehemothBot')
+										message.channel.send(Embed)
+									} catch (error) {
+										console.log(error)
+										message.channel.send('An internal error occurred fetching artist top songs')
+									}
+								}
+								gettopalbumsBy()
+								break;
+							default:
+								message.channel.send("Error: Argument not found")
+								break;
 						}
+						break;
+					default:
+						message.channel.send("Error: Argument not found")
 						break;
                 }
 				break;
