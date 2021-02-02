@@ -52,6 +52,88 @@ client.on('message', message => {
 		}
 		getWeather()
 	}
+	else if (command === 'define') {
+		const getDefinition = async () => {
+			try {
+				const { data } = await axios.get(
+					'https://www.merriam-webster.com/dictionary/' + args[0]
+				);
+				const $ = cheerio.load(data)
+
+				const definition = $('span.sb-0 > div.sense.has-sn > span.dt > span.dtText').text();
+				const Embed = new Discord.MessageEmbed()
+					.setColor('#0099ff')
+					.setTitle(args[0])
+					.setDescription(definition)
+					.setTimestamp()
+					.setFooter('BehemothBot');
+				message.channel.send(Embed);
+			} catch (error) {
+				console.log(error)
+				message.channel.send(error)
+			}
+		}
+		getDefinition()
+	}
+	else if (command === 'scp') {
+		const getSCP = async () => {
+			try {
+				if (args[0] != "random") {
+					const { data } = await axios.get('http://www.scpwiki.com/scp-' + args[0]);
+					const $ = cheerio.load(data)
+					const url = 'http://www.scpwiki.com/scp-' + args[0]
+					const pg = $('p').text();
+
+					const objectclassstart = pg.indexOf("Object Class");
+					const objectclassend = pg.indexOf("Special Containment Procedures");
+					const objectclass = pg.substring(objectclassstart, objectclassend);
+
+					const containmentend = pg.indexOf("Description");
+					const containment = pg.substring(objectclassend, containmentend);
+
+					const description = pg.substring(containmentend, 2048);
+					const Embed1 = new Discord.MessageEmbed()
+						.setColor('#0099ff')
+						.setTitle(`SCP ${args[0]}`)
+						.addField('Object Class', objectclass, true)
+						.addField('Special Containment Procedures', containment, true)
+						.setDescription(description)
+						.setTimestamp()
+						.setFooter('BehemothBot');
+					message.channel.send(Embed1);
+				}
+				else {
+					const { data } = await axios.get('http://www.scpwiki.com/scp-' + Math.floor((Math.random() * 5999) + 99));
+					const $ = cheerio.load(data)
+					const pg = $('p').text();
+					const objectclassstart = pg.indexOf("Object Class");
+					const objectclassend = pg.indexOf("Special Containment Procedures");
+					const objectclass = pg.substring(objectclassstart, objectclassend);
+					const scpname = $('#page-title').text();
+
+					const containmentend = pg.indexOf("Description");
+					const containment = pg.substring(objectclassend, containmentend);
+
+					const description = pg.substring(containmentend, 2048);
+
+
+					const Embed2 = new Discord.MessageEmbed()
+						.setColor('#0099ff')
+						.setTitle(scpname)
+						.addField('Object Class', objectclass, true)
+						.addField('Special Containment Procedures', containment, true)
+						.setDescription(description)
+						.setTimestamp()
+						.setFooter('BehemothBot');
+					message.channel.send(Embed2);
+				}
+			} catch (error) {
+				console.log(error)
+				message.channel.send(error)
+			}
+		}
+		getSCP()       
+    }
 	else if (command === 'help') {
 		message.channel.send("```ping, calljs, weather, covid, wikipedia, number, reddit, meme, fm```")
 		switch (args[0]) {
