@@ -24,6 +24,81 @@ client.on('message', message => {
 	else if (command === 'calljs') {
 		message.channel.send('BehemothBot.js is active')
 	}
+		else if (command === 'search') {
+		const getResults = async () => {
+			try {
+				function makeEmbed(title, description) {
+					const Embed = new Discord.MessageEmbed()
+						.setColor('#0099ff')
+						.setTitle(title)
+						.setDescription(description)
+						.setTimestamp()
+						.setFooter('BehemothBot');
+					message.channel.send(Embed);
+				}
+				const newargs = args;
+				newargs.shift();
+				const { data } = await axios.get('https://duckduckgo.com/html/?q=' + newargs.join().replace(/,/g, "+"));
+				const $ = cheerio.load(data);
+				message.channel.send('https://duckduckgo.com/html/?q=' + args.join().replace(/,/g, "+"));
+					function getURL(which) {
+						const result1linkenc = $(`div.results div:nth-child(${which}) > div.links_main.links_deep.result__body > a.result__snippet`).attr("href");
+						const result1link = decodeURIComponent(result1linkenc.substring(25, result1linkenc.length));
+						const resulttitle = $(`div.results div:nth-child(${which}) > div.links_main.links_deep.result__body > h2.result__title > a.result__a`).text();
+						const resultdescription = $(`div.results div:nth-child(${which}) > div.links_main.links_deep.result__body > a.result__snippet`).text();
+						makeEmbed(resulttitle, `${result1link}\n${resultdescription}`);
+				}
+					getURL(1);
+					getURL(2);
+					getURL(3);
+					getURL(4);
+					getURL(5);
+					function page(howmuch) {
+						switch (howmuch) {
+							case "1":
+								getURL2(1);
+								getURL2(2);
+								getURL2(3);
+								getURL2(4);
+								getURL2(5);
+								break;
+							case "2":
+								getURL2(6);
+								getURL2(7);
+								getURL2(8);
+								getURL2(9);
+								getURL2(10);
+								break;
+							case "3":
+								getURL2(11);
+								getURL2(12);
+								getURL2(13);
+								getURL2(14);
+								getURL2(15);
+								break;
+							case "4":
+								getURL2(16);
+								getURL2(17);
+								getURL2(18);
+								getURL2(19);
+								getURL2(20);
+								break;
+							case "5":
+								getURL2(21);
+								getURL2(22);
+								getURL2(23);
+								getURL2(24);
+								getURL2(25);
+								break;
+                        }
+					}
+			} catch (error) {
+				console.log(error)
+				message.channel.send(error)
+			}
+		}
+		getResults()
+    }
 	else if (command === 'weather') {
 		const country = args[0]
 		const state = args[1]
