@@ -29,7 +29,7 @@ def CLIENT_MESSAGES(url):
 def CLIENT_IDENTIFY(url):
     print("Websocket: Identifying client")
     ws = create_connection(url)
-    ws.send('{"v":8, "encoding":"json", "op":2, "token":"NzU4MzU3NDYzMTg2OTMxNzg2.X2txbA.6xPFDGzqH9GPSBMmFgxPCqCJIv4", "intents":512"properties"{"$os":"linux", "$browser":"disco", "$device":"disco"}}')
+    ws.send('{"v":8, "encoding":"json", "op":2, "token":"TOKEN", "intents":512"properties"{"$os":"linux", "$browser":"disco", "$device":"disco"}}')
     print(ws.recv())
 
 def CLIENT_HEARTBEAT(url):
@@ -56,7 +56,7 @@ if input():
     messagescan = input();
     
     auth = {
-        'Authorization': 'NzU4MzU3NDYzMTg2OTMxNzg2.X2txbA.6xPFDGzqH9GPSBMmFgxPCqCJIv4'
+        'Authorization': 'TOKEN'
         }
     payload = {
         'content': messagescan
